@@ -1,85 +1,78 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+<script>
+import { RouterLink, RouterView } from "vue-router";
+import { useFirebaseStore } from "./stores/firebase";
+import { useUserStore } from './stores/user';
+import { useProductStore} from "./stores/products";
+export default {
+  setup() {
+    const fb = useFirebaseStore();
+    const userStore = useUserStore();
+    fb.init().then(() => {
+      const productStore = useProductStore();
+      productStore.getProducts()
+      // productStore.getItems()
+    });
+    return {userStore};
+  },
+};
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
-      <nav>
+  <main>
+    <header>
+      <div>
         <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
+        <RouterLink to="/store">Store</RouterLink>
+        <RouterLink v-if ='userStore.isLogged' to="/profile">Profile</RouterLink>
+      </div>
+    </header>
+    <div class="view-wrapper">
+      <RouterView/>
     </div>
-  </header>
-
-  <RouterView />
+    <footer>
+      <div>
+        <p>© 2021 - All rights reserved</p>
+      </div>
+    </footer>
+  </main>
 </template>
 
 <style scoped>
+main {
+  position:fixed;
+  top:var(--header-height);
+  height:calc(100vh - var(--header-height) - var(--footer-height));
+  left:0;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  background-color: #f5f5f5;
+}
 header {
-  line-height: 1.5;
-  max-height: 100vh;
+  position:fixed;
+  top:0;
+  left:0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  max-height: var(--header-height);
+  width:100%;
+  z-index: 1;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+footer {
+  position:fixed;
+  bottom:0;
+  left:0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+  width:100%;
+  max-height: var(--footer-height)
 }
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
+.view-wrapper {
+  height:100%;
 }
 </style>

@@ -35,6 +35,11 @@
 
   --section-gap: 160px;
 }
+/* width / height / margin / padding */
+:root {
+  --header-height: 2rem;
+  --footer-height: 2rem;
+}
 
 @media (prefers-color-scheme: dark) {
   :root {
