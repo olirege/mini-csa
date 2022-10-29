@@ -1,10 +1,11 @@
 import { defineStore } from "pinia";
 import { useFirebaseStore } from "../stores/firebase";
-import { collection, getDocs, setDoc, doc, runTransaction } from "firebase/firestore";
+import { collection, getDocs, setDoc, doc, collectionGroup } from "firebase/firestore";
 
 export const useProductStore = defineStore("products", {
   state: () => ({
     products: {},
+    items: {},
   }),
   getters: {
   },
@@ -13,18 +14,6 @@ export const useProductStore = defineStore("products", {
       return this.products[pid].items[iid];
     },
 
-    async productTransactionHandler(pid, qty) {
-      const fb = useFirebaseStore();
-      const productRef = doc(fb.db, "products", pid);
-      await runTransaction(async (transaction) => {
-        const docSnap = await transaction.get(productRef);
-        if (!docSnap.exists()) {
-          throw "Document does not exist!";
-        }
-        const newStock = docSnap.data().stock - qty;
-        transaction.update(productRef, { stock: newStock });
-      });
-    },
     async updateItemStock(pid,iid, qty) {
       const fb = useFirebaseStore();
       const newStock = this.products[pid].items[iid].stock - qty;
@@ -46,6 +35,57 @@ export const useProductStore = defineStore("products", {
         itemsSnapshot.forEach((item) => {
           this.products[doc.id]["items"][item.id] = item.data();
         });
+      });
+    },
+    async getItems(){
+      const fb = useFirebaseStore();
+      const itemsRef = collectionGroup(fb.db, "item");
+      const querySnapshot = await getDocs(itemsRef);
+      querySnapshot.forEach((doc) => {
+        this.items[doc.id] = doc.data();
+      });
+    },
+    
+    async createProduct(product) {
+      const fb = useFirebaseStore();
+      const productsRef = collection(fb.db, "products");
+      await setDoc(doc(productsRef), product).then(() => {
+        console.log("product created");
+      });
+    },
+    async createItem(pid, item) {
+      const fb = useFirebaseStore();
+      const itemsRef = collection(fb.db, "products", pid, "item");
+      await setDoc(doc(itemsRef), item).then(() => {
+        console.log("item created");
+      });
+    },
+    async modifyProduct(pid, product) {
+      const fb = useFirebaseStore();
+      const productRef = doc(fb.db, "products", pid);
+      await setDoc(productRef, product, { merge: true }).then(() => {
+        console.log("product modified");
+      });
+    },
+    async modifyItem(pid, iid, item) {
+      const fb = useFirebaseStore();
+      const itemRef = doc(fb.db, "products", pid, "item", iid);
+      await setDoc(itemRef, item, { merge: true }).then(() => {
+        console.log("item modified");
+      });
+    },
+    async deleteProduct(pid) {
+      const fb = useFirebaseStore();
+      const productRef = doc(fb.db, "products", pid);
+      await setDoc(productRef, { deleted: true }, { merge: true }).then(() => {
+        console.log("product deleted");
+      });
+    },
+    async deleteItem(pid, iid) {
+      const fb = useFirebaseStore();
+      const itemRef = doc(fb.db, "products", pid, "item", iid);
+      await setDoc(itemRef, { deleted: true }, { merge: true }).then(() => {
+        console.log("item deleted");
       });
     },
   }

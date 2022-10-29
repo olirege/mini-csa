@@ -15,12 +15,17 @@ export default ({
         function onRemoveFromCart(pid,iid) {
             cartStore.removeFromCart(pid,iid)
         }
+        function onCheckout() {
+            cartStore.checkout()
+        }
     return {
         products: productStore.products,
         cart,
+        cartStore,
         onAddToCart,
         onRemoveFromCart,
         userStore,
+        onCheckout,
         }
     },
 })
@@ -66,16 +71,22 @@ export default ({
         </div>
         <div class='cart-wrapper' v-if="userStore.isLogged">
             <h1>cart</h1>
-            <div class="cart">
+            <h3>Total: {{cartStore.cartTotal()}}$</h3>
+            <div class="cart" v-if="cart">
                 <div class='cart-card' v-for='item in cart' :key='item'>
                     <span class="card-info">
                         <h2>{{products[item.pid].items[item.iid].name}}</h2>
                         <p>{{item.qty}}{{item.qty > 1 ? "units": "unit"}}</p>
+                        <p>{{item.price}}$/ea</p>
+                        <p>{{item.qty * item.price}}$</p>
                     </span>
                     <span class="card-buttons">
                         <button class="card-button" @click="onAddToCart(item.pid,item.iid)">+</button>
                         <button class="card-button" @click="onRemoveFromCart(item.pid,item.iid)">-</button>
                     </span>
+                </div>
+                <div class="cart-checkout">
+                    <button class="card-button" @click="onCheckout">Checkout</button>
                 </div>
             </div>
         </div>

@@ -1,16 +1,24 @@
 <script>
-import { RouterLink, RouterView } from "vue-router";
+import { RouterLink, RouterView, useRouter } from "vue-router";
 import { useFirebaseStore } from "./stores/firebase";
 import { useUserStore } from './stores/user';
 import { useProductStore} from "./stores/products";
 export default {
   setup() {
+    const router = useRouter();
     const fb = useFirebaseStore();
     const userStore = useUserStore();
     fb.init().then(() => {
       const productStore = useProductStore();
       productStore.getProducts()
       // productStore.getItems()
+    });
+    router.beforeEach((to, from, next) => {
+      if (to.meta.requiresAuth && !userStore.isAdmin) {
+        next({ name: "store" });
+      } else {
+        next();
+      }
     });
     return {userStore};
   },
@@ -24,6 +32,7 @@ export default {
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/store">Store</RouterLink>
         <RouterLink v-if ='userStore.isLogged' to="/profile">Profile</RouterLink>
+        <RouterLink to="/employeepanel">Employee Panel</RouterLink>
       </div>
     </header>
     <div class="view-wrapper">

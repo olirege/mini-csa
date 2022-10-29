@@ -4,6 +4,12 @@ import StoreView from "../views/StoreView.vue";
 import SubscribeView from "../views/SubscribeView.vue";
 import ProductView from "../views/ProductView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import EmployeePanelView from "../views/employee/EmployeePanelView.vue";
+import CRUDProductView from "../views/employee/CRUDProductView.vue";
+import InventoryView from "../views/employee/InventoryView.vue";
+import OrdersView from "../views/employee/OrdersView.vue";
+import ScheduleView from "../views/employee/ScheduleView.vue";
+import OrderDetailView from "../views/OrderDetailView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -33,7 +39,49 @@ const router = createRouter({
       path: "/profile/",
       name: "profile",
       component: ProfileView,
-    }
+    },
+    {
+      path: "/order/view/:id",
+      name: "order",
+      component: OrderDetailView,
+      props:true,
+    },
+    {
+      path: "/employeepanel",
+      name: "employee",
+      component: EmployeePanelView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "crudproducts",
+      path: "/employeepanel/crudproducts",
+      component: CRUDProductView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "inventory",
+      path: "/employeepanel/inventory",
+      component: InventoryView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "orders",
+      path: "/employeepanel/orders",
+      component: OrdersView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "schedule",
+      path: "/employeepanel/schedule",
+      component: ScheduleView,
+      // meta: { requiresAuth: true },
+    },
+    
+    {
+      path: "/:pathMatch(.*)*",
+      redirect: "/",
+    },
+
 
 
   ],
