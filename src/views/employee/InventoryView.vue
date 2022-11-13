@@ -43,8 +43,6 @@ export default ({
     setup() {
         const productStore = useProductStore()
         const collapsed = []
-        productStore.getItems()
-        const items = productStore.items
         const newProduct = reactive({
             name: '',
             price: '',
@@ -70,7 +68,6 @@ export default ({
         
         return {
             productStore,
-            items,
             newProduct,
             updateProduct,
             deleteProduct,

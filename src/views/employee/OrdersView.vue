@@ -9,7 +9,7 @@
         <div class='content' v-if="carts">
             <div class="order" v-for="cart in carts" :key="cart">
                 <div class="query-id">{{cart}}</div>
-                <div class='query-item' v-for="(item,index) in cart.active.items" :key="index">{{item.iid}} {{item.qty}}</div>
+                <div class='query-item' v-for="(item,index) in cart.active.items" :key="index">{{item.name}} {{item.qty}}</div>
             </div>
         </div>
     </div>

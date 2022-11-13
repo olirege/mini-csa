@@ -3,7 +3,7 @@ export const useTextStore = defineStore("text", {
   state: () => ({
     text: {
       login: {
-        welcome: "Welcome!",
+        welcome: "Bienvenue!",
         subtitle: "Sign in to continue",
         welcomeBack: "Welcome back",
         login: "Log in",

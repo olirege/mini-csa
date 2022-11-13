@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { useFirebaseStore } from "../stores/firebase";
-import { collection, getDocs, setDoc, doc, collectionGroup } from "firebase/firestore";
+import { collection, getDoc, setDoc, doc, getDocFromCache, runTransaction, getDocs, where, query,arrayUnion, collectionGroup } from "firebase/firestore";
 
 export const useProductStore = defineStore("products", {
   state: () => ({
@@ -13,7 +13,6 @@ export const useProductStore = defineStore("products", {
     selectedProduct(pid,iid) {
       return this.products[pid].items[iid];
     },
-
     async updateItemStock(pid,iid, qty) {
       const fb = useFirebaseStore();
       const newStock = this.products[pid].items[iid].stock - qty;
@@ -25,16 +24,23 @@ export const useProductStore = defineStore("products", {
     },
     async getProducts() {
       const fb = useFirebaseStore();
-      const productsRef = collection(fb.db, "products");
+      const productsRef = query(collection(fb.db, "products"), where("deleted", "==", false));
+      // const productsRef = collection(fb.db, "products");
       const querySnapshot = await getDocs(productsRef);
       querySnapshot.forEach(async (doc) => {
         this.products[doc.id] = doc.data();
         this.products[doc.id]["items"] = {};
-        const itemsRef = collection(fb.db, "products", doc.id, "item");
+        const itemsRef = query(collection(fb.db, "products", doc.id, "item"), where("deleted", "==", false));
+        // const itemsRef = collection(fb.db, "products", doc.id, "item");
         const itemsSnapshot = await getDocs(itemsRef);
         itemsSnapshot.forEach((item) => {
-          this.products[doc.id]["items"][item.id] = item.data();
+          if(item.data()){
+            this.products[doc.id].items[item.id] = item.data();
+          }
         });
+        if (Object.keys(this.products[doc.id].items).length === 0){
+          delete this.products[doc.id];
+        }
       });
     },
     async getItems(){
@@ -60,14 +66,14 @@ export const useProductStore = defineStore("products", {
         console.log("item created");
       });
     },
-    async modifyProduct(pid, product) {
+    async updateProduct(pid, product) {
       const fb = useFirebaseStore();
       const productRef = doc(fb.db, "products", pid);
       await setDoc(productRef, product, { merge: true }).then(() => {
         console.log("product modified");
       });
     },
-    async modifyItem(pid, iid, item) {
+    async updateItem(pid, iid, item) {
       const fb = useFirebaseStore();
       const itemRef = doc(fb.db, "products", pid, "item", iid);
       await setDoc(itemRef, item, { merge: true }).then(() => {

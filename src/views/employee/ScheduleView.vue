@@ -1,10 +1,10 @@
 <template>
     <div class="page-wrapper">
         <div class="content">
-            <div class='row' v-for="(date,index) in cartsDueForNext5DaysByDate" :key="index">
-                {{date}}
-                <div v-for="(cart,index) in date" :key="index">
-                    {{cart}}
+            <div class='row' v-for="(value,key,index) in cartsDueForNext7DaysByDate" :key="index">
+                {{key}}
+                <div class='cart-detail' v-for="(cart,index) in value" :key="index">
+                    {{cart.id}}
                 </div>
             </div>
         </div>
@@ -18,38 +18,47 @@ export default ({
 
     setup() {
         const today = new Date()
-        const datesofUpcomingDays = []
+        const datesOfUpcomingDays = []
         
-        for (let i = 0; i < 5; i++) {
-            datesofUpcomingDays.push(new Date(today.getFullYear(), today.getMonth(), today.getDate() + i))
+        for (let i = 0; i < 7; i++) {
+            datesOfUpcomingDays.push(new Date(today.getFullYear(), today.getMonth(), today.getDate() + i))
         }
-        const cartsDueForNext5DaysByDate = ref(null)
+        const cartsDueForNext7DaysByDate = ref(null)
         const productStore = useProductStore()
         const cartStore = useCartStore()
-        cartStore.cartsDueForNext5Days()
+        cartStore.cartsDueForNext7Days()
         .then( () =>{
-            cartsDueForNext5DaysByDate.value = pushDatesInObj()
+            cartsDueForNext7DaysByDate.value = pushDatesInObj()
 
         })
 
         function initObject() {
             const obj = {}
-            datesofUpcomingDays.forEach((date) => {
-                obj[date] = []
+            datesOfUpcomingDays.forEach((date) => {
+                let formattedDate = date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear()
+                obj[formattedDate] = []
             })
             return obj
         }
         function pushDatesInObj(){
             const obj = initObject()
             cartStore.cartsDue.forEach((cart) => {
-                const date = cart.closesOn.toDate()
-                obj[date].push(cart)
+                let temp = cart.data.closesOn.toDate()
+                let formattedDate = temp.getDate() + '/' + (temp.getMonth() + 1) + '/' + temp.getFullYear()
+                if(Object.keys(obj).includes(formattedDate)){
+                    obj[formattedDate].push(cart)
+                }
             })
             return obj
         }
         return {
-            cartsDueForNext5DaysByDate
+            cartsDueForNext7DaysByDate
         }
     },
 })
 </script>
+<style scope>
+.cart-detail{
+    margin-left:1rem;
+}
+</style>

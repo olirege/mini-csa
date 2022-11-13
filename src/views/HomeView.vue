@@ -22,7 +22,7 @@ export default ({
           if(user.isLogged){
              router.push('store')
              fb.loginError = null
-             user.fetchProfie()
+             user.fetchProfile()
             }
         })
         .catch((error) => {

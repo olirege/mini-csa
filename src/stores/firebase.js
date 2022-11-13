@@ -22,6 +22,7 @@ export const useFirebaseStore = defineStore("firebase", {
       signInWithEmailAndPassword: "https://us-central1-mini-csa.cloudfunctions.net/createUser/login",
       getRealexHpp: "https://us-central1-mini-csa.cloudfunctions.net/createUser/getRealexHpp/",
       RealexHppEndpoint: "https://us-central1-mini-csa.cloudfunctions.net/createUser/RealexEndpoint/",
+      removeCC: "https://us-central1-mini-csa.cloudfunctions.net/createUser/removeCC/",
     },
   db:null,
   loginError: ref(null),

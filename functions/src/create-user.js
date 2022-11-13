@@ -1,22 +1,32 @@
 const express = require("express");
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
 const bodyParser = require("body-parser");
 const createUserApp = express();
 const CryptoJS = require("crypto-js");
-// const axios = require("axios");
+const axios = require("axios");
+const DOMParser = require("xmldom").DOMParser;
 const {db, auth} = require("./init.js");
 const cors = require("cors");
-const ORDER_ID = Math.random().toString(36).substring(2, 15);
-const TIMESTAMP = timestampToYYYYMMDDHHMMSS();
 const MERCHANT_ID = "dev944773432681974498";
 const AMOUNT = 0;
 const CURRENCY = "USD";
 const SS = "B4Kxk3Ven1";
 const PAYER_REF = "376a2598-412d-4805-9f47-c177d5605853";
 const PMT_REF = "";
-function createSHA1() {
+function createOid() {
+  return Math.random().toString(36).substring(2, 15);
+}
+function createSHA1(oid, ts) {
   const sha1 = CryptoJS.SHA1(
-    `${TIMESTAMP}.${MERCHANT_ID}.${ORDER_ID}.${AMOUNT}.${CURRENCY}.${PAYER_REF}.${PMT_REF}`);
+    `${ts}.${MERCHANT_ID}.${oid}.${AMOUNT}.${CURRENCY}.${PAYER_REF}.${PMT_REF}`);
+  const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
+  const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
+  return shaSSHex;
+}
+function createDELETESHA1(ts, pmtRef, payerRef) {
+  const sha1 = CryptoJS.SHA1(
+    `${ts}.${MERCHANT_ID}.${payerRef}.${pmtRef}`);
   const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
   const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
   return shaSSHex;
@@ -39,7 +49,9 @@ createUserApp.use(bodyParser.json());
 createUserApp.use(cors({origin: true}));
 
 createUserApp.get("/getRealexHpp", (req, res) => {
-  const SHA1HASH = createSHA1();
+  const ORDER_ID = createOid();
+  const TIMESTAMP = timestampToYYYYMMDDHHMMSS();
+  const SHA1HASH = createSHA1(ORDER_ID, TIMESTAMP);
   res.status(200).json({
     MERCHANT_ID: MERCHANT_ID,
     AMOUNT: AMOUNT,
@@ -62,12 +74,29 @@ createUserApp.post("/RealexEndpoint", (req, res) => {
     try {
       const data = req.body;
       functions.logger.debug("data", data);
-      if (data.data.error) {
-        res.status(500).json({error: data.data.error});
+      if (data.error) {
+        res.status(500).json({error: data.message});
       } else {
-        res.status(200).json({data: data});
+        db.doc(`users/${data.uid}`)
+          .set({
+            cc: admin.firestore.FieldValue.arrayUnion({
+              ORDER_ID: data.ORDER_ID,
+              TIMESTAMP: data.TIMESTAMP,
+              PASREF: data.PASREF,
+              SAVED_PAYER_REF: data.SAVED_PAYER_REF,
+              SAVED_PMT_DIGITS: data.SAVED_PMT_DIGITS,
+              SAVED_PMT_EXPDATE: data.SAVED_PMT_EXPDATE,
+              SAVED_PMT_NAME: data.SAVED_PMT_NAME,
+              SAVED_PMT_REF: data.SAVED_PMT_REF,
+              SAVED_PMT_TYPE: data.SAVED_PMT_TYPE,
+              SHA1HASH: data.SHA1HASH,
+              isSelectedCC: false,
+          }),
+        }, {merge: true});
+        res.status(200).json({data: "Card Added Successfully"});
       }
     } catch (err) {
+      functions.logger.debug("catch err", err);
       res.status(500).json({error: "Backend error, contact support"});
     }
 });
@@ -85,18 +114,6 @@ function setUserToDb(user, json) {
   resolve();
   });
 }
-// createUserApp.post("/login", (req, res) => {
-//   const json = req.body;
-//   auth.generateSignInWithEmailLink(json.email, json.password)
-//       .then((data) => {
-//         return res.status(200).json({data: data});
-//       })
-//       .catch((err) => {
-//         functions.logger.debug("login attempt failed", err);
-//         const errorMessage = "Wrong email or password";
-//         return res.status(502).json({error: errorMessage});
-//       });
-// });
 createUserApp.post("/", (req, res) => {
   const data = req.body;
   auth.getUserByEmail(data.user.email)
@@ -130,6 +147,56 @@ createUserApp.post("/", (req, res) => {
       }
     );
   });
+});
+createUserApp.post("/removeCC", (req, res) => {
+  const ccToRemove = req.body;
+  const uid = ccToRemove.uid;
+  delete ccToRemove.uid;
+  functions.logger.debug("Removing CC");
+  const TIMESTAMP = timestampToYYYYMMDDHHMMSS();
+  const ORDER_ID = createOid();
+  const SHA1HASH = createDELETESHA1(TIMESTAMP, ccToRemove.SAVED_PMT_REF, ccToRemove.SAVED_PAYER_REF);
+  const data = `<?xml version="1.0" encoding="UTF-8"?>
+              <request type="card-cancel-card" timestamp="${TIMESTAMP}">
+              <merchantid>${MERCHANT_ID}</merchantid>
+              <account>internet</account>
+              <orderid>${ORDER_ID}</orderid>
+              <card>
+                <ref>${ccToRemove.SAVED_PMT_REF}</ref>
+                <payerref>${ccToRemove.SAVED_PAYER_REF}</payerref>
+              </card>
+              <sha1hash>${SHA1HASH}</sha1hash>
+              </request>`;
+  axios({
+      method: "post",
+      url: "https://api.sandbox.realexpayments.com/epage-remote.cgi",
+      data: data,
+      headers: {
+          "Content-Type": "text/xml;charset=UTF-8",
+      },
+  }).then((xmlResponse) => {
+    const doc = new DOMParser().parseFromString(xmlResponse.data);
+    const result = doc.getElementsByTagName("result")[0].childNodes[0].nodeValue;
+    if (result === "00") {
+      functions.logger.debug("CC Removed Successfully from Realex");
+      functions.logger.debug("Removing CC from DB");
+      db.doc(`users/${uid}`)
+          .update({
+            cc: admin.firestore.FieldValue.arrayRemove(ccToRemove),
+          })
+          .then(() => {
+            functions.logger.debug("CC Removed Successfully from DB");
+            res.status(200).json({data: "Card Removed Successfully"});
+          })
+          .catch((err) => {
+            functions.logger.debug("Error during CC removal from DB,", err);
+            res.status(500).json({error: "Error during CC removal from DB, please try again"});
+          });
+      } else {
+        functions.logger.debug("Error during CC removal from Realex,", result);
+        res.status(500).json({error: "Error during Card Removal, contact support"});
+      }
+    });
 });
 module.exports = createUserApp;
 

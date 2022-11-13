@@ -1,18 +1,22 @@
 <template>
     <div class="page-wrapper">
         <h2>Order {{id}} Summary</h2>
-        <div class="grid-content" v-if="oldCart">
+        <div class="grid-content" v-if="oldCart && oldCart.oid == id">
             <div class="header">Processed on:{{oldCart.closedOn.toDate()}}</div>
             <div class="column">
-                <div class="row" v-for="item in oldCart.items" :key="item.iid">{{products[item.pid].items[item.iid].name}} {{item.qty}} {{item.price}}$ {{item.price * item.qty}}$</div>
+                <div class="row" v-for="item in oldCart.items" :key="item.iid">{{item.name}} {{item.qty}} x {{item.price}}$ = {{item.price * item.qty}}$</div>
             </div>
             <div class="'total'">Total {{oldCart.total}}$</div>
+        </div>
+        <div v-else>
+            <h2>no order</h2>
         </div>
     </div>
 </template>
 <script>
 import { useCartStore } from '../stores/cart'
 import { useProductStore} from '../stores/products'
+import { computed } from 'vue'
 export default ({
     props:[
         'id',
@@ -21,10 +25,11 @@ export default ({
         const productStore = useProductStore()
         const products = productStore.products 
         const cartStore = useCartStore()
+        const oldCart = computed(() => cartStore.oldCart)
         cartStore.fetchOlderCart(props.id)
-        const oldCart = cartStore.oldCart
         return {
             oldCart,
+            oldCartLoaded: cartStore.oldCartLoaded,
             products,
         }
     },

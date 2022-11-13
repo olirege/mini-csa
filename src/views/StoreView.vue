@@ -74,12 +74,15 @@ export default ({
             <h3>Total: {{cartStore.cartTotal()}}$</h3>
             <div class="cart" v-if="cart">
                 <div class='cart-card' v-for='item in cart' :key='item'>
-                    <span class="card-info">
-                        <h2>{{products[item.pid].items[item.iid].name}}</h2>
+                    <span class="card-info" v-if="item">
+                        <h2>{{item.name}}</h2>
                         <p>{{item.qty}}{{item.qty > 1 ? "units": "unit"}}</p>
                         <p>{{item.price}}$/ea</p>
                         <p>{{item.qty * item.price}}$</p>
                     </span>
+                    <div v-else>
+                        <h2>no items</h2>
+                    </div>
                     <span class="card-buttons">
                         <button class="card-button" @click="onAddToCart(item.pid,item.iid)">+</button>
                         <button class="card-button" @click="onRemoveFromCart(item.pid,item.iid)">-</button>
