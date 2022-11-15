@@ -47,19 +47,23 @@ export default ({
                 <div class="content" v-if= "product.items">
                     <div class='content-card' v-for='(item,iid,itemIndex) in product.items' :key='itemIndex'>
                             <router-link :to="'/product/' + pid + '&' + iid">
-                            <div class="content-card-img-wrapper">
-                                <span>{{item.name}}</span>
-                            </div>
+                                <div class="content-card-img-wrapper">
+                                    <img v-if ="item.thumbnail" :src="item.thumbnail" alt="product thumbnail">
+                                    <span v-else>{{item.name}}</span>
+                                </div>
                             </router-link>
                             <div class="content-card-content">
-                            <span class="card-info">
-                                <h2>{{item.name}}</h2>
-                                <p>{{item.description}}</p>
-                                <p>{{item.price}}$</p>
-                            </span>
+                                <span class="card-info">
+                                    <span>
+                                        <h3>{{item.name}}</h3>
+                                        <h5 v-if="item.supplier">{{item.supplier.name}}</h5>
+                                    </span>
+                                    <p>{{item.description}}</p>
+                                    <p>{{item.price}}$</p>
+                                </span>
                             <span class="card-buttons">
-                                <button class="card-button" @click="onAddToCart(pid,iid)">Add to Cart</button>
-                                <button class="card-button" @click="onRemoveFromCart(pid,iid)">Remove from Cart</button>
+                                <button class="card-button" @click="onAddToCart(pid,iid)">+</button>
+                                <button class="card-button" @click="onRemoveFromCart(pid,iid)">-</button>
                             </span>
                         </div>
                     </div>
@@ -142,6 +146,7 @@ export default ({
     padding: 10px;
     height:15rem;
 }
+
 .content-card > a > .content-card-img-wrapper{
     display:flex;
     width: 100%;
@@ -152,19 +157,46 @@ export default ({
     width: 100%;
     height: 100%;
     background-color: black;
-} 
+}
+.content-card > a > .content-card-img-wrapper > img{
+    display: flex;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 .content-card > a {
     text-decoration: none;
-    height:100%;
+    max-height:40%;
 }
 .content-card > .content-card-content{
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    min-height: 60%;
+}
+.content-card > .content-card-content > .card-info{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+.content-card > .content-card-content > .card-info > span > h3{
+    margin: 0;
+    font-size: 1em;
+}
+.content-card > .content-card-content > .card-info > p{
+    margin: 0;
+    font-size: 0.8em;
 }
 .content-card > .content-card-content > .card-buttons{
     display: flex;
     justify-content: space-between;
+}
+.content-card > .content-card-content > .card-buttons > .card-button{
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid black;
+    background-color: white;
 }
 .cart-wrapper{
     position:fixed;

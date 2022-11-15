@@ -2,6 +2,7 @@ import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
+import { getStorage } from "firebase/storage";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut} from "firebase/auth";
 import { useUserStore } from "./user";
 import { getFirestore, collection, getDoc, setDoc, doc} from "firebase/firestore";
@@ -32,6 +33,7 @@ export const useFirebaseStore = defineStore("firebase", {
       const app =  initializeApp(this.firebaseConfig);
       this.db = getFirestore(app);
       const analytics =  getAnalytics(app);
+      const storage = getStorage(app);
     },
     async signInUser(email, password){
       const auth = getAuth();
@@ -57,7 +59,7 @@ export const useFirebaseStore = defineStore("firebase", {
           this.loginError = "Invalid email";
         }
       });
-    }
+    },
   }
 });
 

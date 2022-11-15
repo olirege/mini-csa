@@ -8,6 +8,8 @@
                     <router-link class="option" :to="{name:'inventory'}">Inventory</router-link>
                     <router-link class="option" :to="{name:'orders'}">Orders</router-link>
                     <router-link class="option" :to="{name:'schedule'}">Schedule</router-link>
+                    <router-link class="option" :to="{name:'reviews'}">Reviews</router-link>
+                    <router-link class="option" :to="{name:'suppliers'}">Suppliers</router-link>
                 </RouterView>
             </div>
         </div>

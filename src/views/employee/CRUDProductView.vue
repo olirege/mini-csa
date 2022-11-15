@@ -20,6 +20,12 @@
                                     {{ product.name }}
                                 </option>
                             </select>
+                            <select key="select" v-model="selectedSid">
+                                <option v-for="(item,key,index) in supplierStore.suppliers" :key="index" :value="key">
+                                    {{ item.name }}
+                                </option>
+                            </select>
+                            <input type="file" accept="image/jpeg" @change="onUploadImage($event,newItem)"/>
                             <input type="text" id="name" v-model="newItem.name" placeholder="Choose a name">
                             <input type="number" id="price" v-model="newItem.price" placeholder="Pick a price">
                             <input type="text" id="description" v-model="newItem.description" placeholder="Write a description">
@@ -57,6 +63,12 @@
                                     {{ item.name }}
                                 </option>
                             </select>
+                            <select key="select" v-model="selectedSid">
+                                <option v-for="(item,key,index) in supplierStore.suppliers" :key="index" :value="key">
+                                    {{ item.name }}
+                                </option>
+                            </select>
+                            <input type="file" @change="onUploadImage($event,updateItem)"/>
                             <input type="text" id="name" v-model="updateItem.name" placeholder="Choose a name">
                             <input type="number" id="price" v-model="updateItem.price" placeholder="Pick a price">
           
@@ -102,15 +114,20 @@
 </template>
 <script>
 import { useProductStore } from '../../stores/products'
+import { useSuppliersStore } from '../../stores/suppliers'
 import {ref, reactive} from 'vue'   
 export default ({
     setup() {
         const productStore = useProductStore()
+        const supplierStore = useSuppliersStore()
         const selectedIid = ref(0)
+        const selectedPid = ref(0)
+        const selectedSid = ref(0)
 
         const newProduct = reactive({
             name: '',
             description: '',
+            deleted: false,
         })
 
         const newItem = reactive({
@@ -118,36 +135,72 @@ export default ({
             price: '',
             stock: '',
             description: '',
+            image: '',
+            sid: selectedSid,
+            deleted: false,
         })
         const updateItem = reactive({
             name: '',
             price: '',
+            image: '',
             description: '',
+            sid: selectedSid,
         })
         const updateProduct = reactive({
             name: '',
             description: '',
         })
-        const selectedPid = ref('')
+ 
+        function resetObjectFields(obj){
+            for (const key in obj) {
+                obj[key] = ''
+            }
+        }
+        function resetIdsFields(){
+            selectedIid.value = 0
+            selectedPid.value = 0
+            selectedSid.value = 0
+        }
         function onCreateItem(){
             if (selectedPid && Object.values(newItem).every((value) => value !== '')) {
-                productStore.createItem(selectedPid.value, newItem)
+                const unReactiveObj =  {...newItem}
+                productStore.createItem(selectedPid.value, unReactiveObj )
             }
+            resetObjectFields(newItem)
         }
         function onCreateProduct(){
             if (Object.values(newProduct).every((value) => value !== '')) {
-                productStore.createProduct(newProduct)
+                const unReactiveObj =  {...newProduct}
+                productStore.createProduct(unReactiveObj)
             }
+            resetObjectFields(newProduct)
         }
         function onUpdateItem(){
-            if (selectedPid && selectedIid && Object.values(updateItem).every((value) => value !== '')) {
-                productStore.updateItem(selectedPid.value, selectedIid.value, updateItem)
+            if (selectedPid && selectedIid) {
+                const unReactiveObj =  {}
+                Object.assign(unReactiveObj, updateItem)
+                for (const key in unReactiveObj) {
+                    if (unReactiveObj[key] === '') {
+                        delete unReactiveObj[key]
+                    }
+                }
+                productStore.updateItem(selectedPid.value, selectedIid.value, unReactiveObj)
             }
+            resetObjectFields(updateItem)
+            resetIdsFields()
         }
         function onUpdateProduct(){
-            if (selectedPid && Object.values(updateProduct).every((value) => value !== '')) {
-                productStore.updateProduct(selectedPid.value, updateProduct)
+            if (selectedPid && selectedIid) {
+                const unReactiveObj =  {}
+                Object.assign(unReactiveObj, updateProduct)
+                for (const key in unReactiveObj) {
+                    if (unReactiveObj[key] === '') {
+                        delete unReactiveObj[key]
+                    }
+                }
+                productStore.updateProduct(selectedPid.value, unReactiveObj)
             }
+            resetObjectFields(updateProduct)
         }
         function onDeleteProduct(){
             if (selectedPid) {
@@ -158,6 +211,10 @@ export default ({
             if (selectedPid && selectedIid) {
                 productStore.deleteItem(selectedPid.value, selectedIid.value)
             }
+        }
+        function onUploadImage(e,obj){
+            const file = e.target.files[0]
+            obj.image = file
         }
         return {
             productStore,
@@ -173,6 +230,9 @@ export default ({
             onUpdateProduct,
             onDeleteProduct,
             onDeleteItem,
+            supplierStore,
+            selectedSid,
+            onUploadImage,
         }
     },
 })

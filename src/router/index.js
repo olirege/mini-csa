@@ -9,6 +9,8 @@ import CRUDProductView from "../views/employee/CRUDProductView.vue";
 import InventoryView from "../views/employee/InventoryView.vue";
 import OrdersView from "../views/employee/OrdersView.vue";
 import ScheduleView from "../views/employee/ScheduleView.vue";
+import SuppliersView from "../views/employee/SuppliersView.vue";
+import ReviewsView from "../views/employee/ReviewsView.vue";
 import OrderDetailView from "../views/OrderDetailView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -74,6 +76,18 @@ const router = createRouter({
       name: "schedule",
       path: "/employeepanel/schedule",
       component: ScheduleView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "reviews",
+      path: "/employeepanel/reviews",
+      component: ReviewsView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "suppliers",
+      path: "/employeepanel/suppliers",
+      component: SuppliersView,
       // meta: { requiresAuth: true },
     },
     

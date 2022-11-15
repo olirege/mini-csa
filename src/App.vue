@@ -3,15 +3,19 @@ import { RouterLink, RouterView, useRouter } from "vue-router";
 import { useFirebaseStore } from "./stores/firebase";
 import { useUserStore } from './stores/user';
 import { useProductStore} from "./stores/products";
+import { useSuppliersStore } from "./stores/suppliers";
 export default {
   setup() {
     const router = useRouter();
     const fb = useFirebaseStore();
     const userStore = useUserStore();
+    const productStore = useProductStore();
+    const suppliersStore = useSuppliersStore();
     fb.init().then(() => {
-      const productStore = useProductStore();
-      productStore.getProducts()
-      // productStore.getItems()
+      suppliersStore.loadSuppliers().then(() => {
+        productStore.getProducts().then(() => {
+          });
+        });
     });
     router.beforeEach((to, from, next) => {
       if (to.meta.requiresAuth && !userStore.isAdmin) {
