@@ -3,24 +3,26 @@
     <div>
         <h2>Reviews</h2>
     </div>
-        <div class='content' v-if="reviews">
-            <div class="review-wrapper" v-for="(review,key,index) in reviews" :key="index">
+        <div class='content' v-if="allReviews">
+            <div class="review-wrapper" v-for="(reviews,item,index) in allReviews" :key="index">
                 <div class="review-card">
-                    <div>{{review.timestamp.toDate()}}</div>
-                    <span>
-                        <h5>{{review.from}}</h5>
-                        <h5>{{review.iid}}</h5>
-                    </span>
-                    <p>{{review.content}}</p>
-                    <div>{{review.rating}}</div>
-                    <button @click="showReplyBox">Reply</button>
-                    <div class="replybox">
-                        <textarea v-model="replyText.content" placeholder="Write your review here"></textarea>
-                        <button @click="onSendAddReply($event,key)">Send</button>
+                    {{item}}
+                    <div v-for="(review,uid,index) in reviews" :key="index">
+                        <span>
+                            <h5>{{uid}}</h5>
+                            <h5>{{review.timestamp}}</h5>
+                        </span>
+                        <p>{{review.rating}}</p>
+                        <p>{{review.content}}</p>
+                        <button @click="showReplyBox">Reply</button>
+                        <div class="replybox">
+                            <textarea v-model="replyText.content" placeholder="Write your review here"></textarea>
+                            <button @click="onSendAddReply($event,item,uid)">Send</button>
+                        </div>
+                        <div v-if="review.reply">
+                            {{review.reply}}
+                        </div>
                     </div>
-                </div>
-                <div v-if="review.reply">
-                    {{review.reply}}
                 </div>
             </div>
         </div>
@@ -35,24 +37,18 @@ export default({
         const reviewsStore = useReviewsStore()
         const userStore = useUserStore()
         reviewsStore.loadReviews();
-        const reviews = computed(() => reviewsStore.reviews)
+        const allReviews = computed(() => reviewsStore.reviews)
         const replyText = reactive({
             from: userStore.user.uid,
             content: '',
         })
         function showReplyBox(e){
-            if(e.target.nextElementSibling.style.display == 'none'){
-                e.target.nextElementSibling.style.display = 'block'
-            }
-            else{
-                e.target.nextElementSibling.style.display = 'none'
-            }
+            e.target.parentNode.querySelector('.replybox').style.display = 'block'
         }
-        function onSendAddReply(e,rid){
+        function onSendAddReply(e,iid,uid){
             const ids = {
-                rid: rid,
-                iid: reviews.value[rid].iid,
-                pid: reviews.value[rid].pid
+                iid: iid,
+                uid: uid
             }
             const unreactiveReply = {
                 from: replyText.from,
@@ -61,10 +57,11 @@ export default({
             }
             reviewsStore.addReply(ids,unreactiveReply)
             replyText.content = ''
-            e.target.parentElement.style.display = 'none'
+            e.target.parentNode.style.display = 'none'
+
         }
         return {
-            reviews,
+            allReviews,
             showReplyBox,
             replyText,
             onSendAddReply,

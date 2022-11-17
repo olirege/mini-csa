@@ -6,7 +6,7 @@
         <div class="content-wrapper">
         {{product.description}}
         </div>
-        <span>
+        <span v-if="isLogged">
             <button class="card-button" @click="onAddToCart(pid,iid)">Add to Cart</button>
                 <div>{{cartQty}}</div>
             <button class="card-button" @click="onRemoveFromCart(pid,iid)">Remove from Cart</button>
@@ -14,22 +14,31 @@
         <div class="content-wrapper">
             <h5>Reviews</h5>
             <div class="reviews-wrapper" v-if="reviews">
-                <div class='review' v-for="(review,index) in reviews" :key="index">{{review}}</div>
+                <div class='review' v-for="(review,_,index) in reviews" :key="index">{{review}}</div>
             </div>
             <div class="reviews-wrapper" v-else>
                 <div class='review'>No reviews</div>
             </div>
         </div>
-        <div class="content-wrapper" v-if="!asUserPostedReview" >
-            <h5>Write a review</h5>
-            <div class="review-form">
-                <textarea v-model="reviewText.content" placeholder="Write your review here"></textarea>
-                <input type="number" v-model="reviewText.rating" placeholder="Rating (1-5)">
-                <button @click="addReview"> Add Review </button>
+        <div v-if ="reviews">
+            <div class="content-wrapper" v-if="userStore.user && reviewsStore.hasUserReviewed()" >
+                <h5>Write a review</h5>
+                <div class="review-form">
+                    <textarea v-model="reviewText.content" placeholder="Write your review here"></textarea>
+                    <input type="number" v-model="reviewText.rating" placeholder="Rating (1-5)">
+                    <button @click="addReview"> Add Review </button>
+                </div>
             </div>
-        </div>
-        <div class="content-wrapper" v-else>
-            <h5>You have already posted a review</h5>
+            <div class="content-wrapper" v-else-if="!userStore.user">
+                <p>
+                    <router-link to="/login">Login</router-link> to write a review
+                </p>
+            </div>
+            <div class="content-wrapper" v-else>
+                <p>
+                    You have already reviewed this product
+                </p>
+            </div>
         </div>
     </main>
 </template>
@@ -38,6 +47,7 @@ import { reactive, computed } from 'vue'
 import { useProductStore } from '../stores/products'
 import {useCartStore} from '../stores/cart'
 import {useUserStore} from '../stores/user'
+import {useReviewsStore} from '../stores/reviews'
 export default ({
     props:[
         'id'
@@ -49,36 +59,26 @@ export default ({
         const product = productStore.selectedProduct(pid,iid)
         const cartStore = useCartStore()
         const userStore = useUserStore()
-        productStore.getItemReviews(pid,iid)
+        const reviewsStore = useReviewsStore()
+        reviewsStore.getItemReviews(iid)
         const reviewText = reactive({
-            from: cartStore.cid,
             content: '',
             rating: 0,
             timestamp: Date.now()
         })
-        const reviews = computed(() => productStore.reviews)
+        const reviews = computed(() => reviewsStore.itemReviews)
         const cartQty = computed(() => cartStore.cartQty(iid))
         function addReview(){
-            productStore.addReview(pid,iid,reviewText)
+            reviewsStore.addReview(iid,reviewText)
             reviewText.content = ''
             reviewText.rating = 0
-            productStore.getItemReviews(pid,iid)
+            reviewsStore.getItemReviews(iid)
         }
         function onAddToCart(pid,iid) {
             cartStore.addToCart(pid,iid)
         }
         function onRemoveFromCart(pid,iid) {
             cartStore.removeFromCart(pid,iid)
-        }
-        function asUserPostedReview(){
-            const user = userStore.user
-            const userReviews = user.reviews
-            for(let i=0;i<userReviews.length;i++){
-                if(userReviews[i].iid == iid){
-                    return true
-                }
-            }
-            return false
         }
         
         return {
@@ -91,7 +91,9 @@ export default ({
             reviews,
             addReview,
             reviewText,
-            asUserPostedReview
+            isLogged: userStore.isLogged,
+            reviewsStore,
+            userStore,
         }  
     },
 })

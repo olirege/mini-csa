@@ -7,21 +7,21 @@
             <input type="text" v-model="search" placeholder="Search">
         </div>
         <div class='content' v-if="carts">
-            <div class="order" v-for="cart in carts" :key="cart">
-                <div class="query-id">{{cart}}</div>
-                <div class='query-item' v-for="(item,index) in cart.active.items" :key="index">{{item.name}} {{item.qty}}</div>
+            <div class="order" v-for="(cart,index) in carts" :key="index">
+                <div class="query-id">{{cart.id}}</div>
+                <div class='query-item' v-for="(item,index) in cart.data.items" :key="index">{{item.name}} {{item.qty}}</div>
             </div>
         </div>
     </div>
 </template>
 <script>
 import { useCartStore } from '../../stores/cart'
-import {ref} from 'vue'
+import {ref,computed} from 'vue'
 export default ({
     setup() {
         const cartStore = useCartStore()
-        cartStore.loadFullCarts()
-        const carts = cartStore.carts
+        cartStore.getFullCartsDueToday()
+        const carts = computed(() => cartStore.carts)
         const search = ref(null)
         return {
             cartStore,

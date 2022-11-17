@@ -26,7 +26,7 @@ export default ({
         const products = productStore.products 
         const cartStore = useCartStore()
         const oldCart = computed(() => cartStore.oldCart)
-        cartStore.fetchOlderCart(props.id)
+        cartStore.getOlderCart(props.id)
         return {
             oldCart,
             oldCartLoaded: cartStore.oldCartLoaded,

@@ -144,6 +144,7 @@ export default ({
         const fb = useFirebaseStore()
         const userStore = useUserStore()
         const cartStore = useCartStore()
+        cartStore.loadCartHistory()
         const cartHistory = cartStore.cartHistory
         const showAddCardModal = ref(false)
         const showEditCardModal = ref(false)

@@ -1,11 +1,11 @@
-import { ref, computed } from "vue";
 import { defineStore } from "pinia";
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut} from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword} from "firebase/auth";
 import { useUserStore } from "./user";
-import { getFirestore, collection, getDoc, setDoc, doc} from "firebase/firestore";
+import { useCartStore } from "./cart";
+import { getFirestore } from "firebase/firestore";
 
 export const useFirebaseStore = defineStore("firebase", {
   state: () => ({ 
@@ -26,23 +26,45 @@ export const useFirebaseStore = defineStore("firebase", {
       removeCC: "https://us-central1-mini-csa.cloudfunctions.net/createUser/removeCC/",
     },
   db:null,
-  loginError: ref(null),
+  storage:null,
+  loginError: null,
   }),
   actions: {
+    /**
+     * 
+     * @description
+     * 1. Initializes the firebase app
+     * 2. Initializes the firestore database
+     * 3. Initializes the storage
+     * 4. Initializes the analytics
+     */
     async init() {
       const app =  initializeApp(this.firebaseConfig);
       this.db = getFirestore(app);
       const analytics =  getAnalytics(app);
-      const storage = getStorage(app);
+      this.storage = getStorage(app);
     },
+    /**
+     * 
+     * @param {*} email 
+     * @param {*} password
+     * 
+     * @description
+     * 1. Signs in the user
+     * 2. Sets the user in the user store
+     * 3. Gets the user profile from the database 
+     */
     async signInUser(email, password){
       const auth = getAuth();
       const userStore = useUserStore();
+      const cartStore = useCartStore();
       await signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         // Signed in 
         const user = userCredential.user;
-        userStore.setUserAndCart(user);
+        userStore.setUser(user);
+        cartStore.loadCart(user.uid);
+
         // ...
       })
       .catch((error) => {

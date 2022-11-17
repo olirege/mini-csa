@@ -1,46 +1,63 @@
 import { defineStore } from "pinia";
-import { collection, getDoc, setDoc, doc, getDocFromCache, runTransaction, getDocs, where, query,arrayUnion, collectionGroup, addDoc } from "firebase/firestore";
-import { useFirebaseStore } from "../stores/firebase";
+import { useHelperStore } from "./helpers";
+import { useProductStore } from "./products";
 export const useSuppliersStore = defineStore("suppliers", {
     state: () => ({
+        helper: useHelperStore(),
         suppliers: {},
         supplier: null,
-        supplierId: null,
     }),
     actions: {
+        /**
+         * @description
+         * 1. Gets the suppliers from the database
+         * 2. Sets the suppliers
+         * */
         async loadSuppliers() {
-            const fb = useFirebaseStore();
-            const suppliersRef = collection(fb.db, "suppliers");
-            const querySnapshot = await getDocs(suppliersRef);
-            querySnapshot.forEach((doc) => {
-                this.suppliers[doc.id] = doc.data();
+            this.helper.getCollection("suppliers").then((suppliers) => {
+                this.suppliers = suppliers;
             });
         },
+        /**
+         * @param {*} supplier
+         * 
+         * @description
+         * 1. Adds the supplier to the database
+         * 2. Adds the supplier to the suppliers array 
+         */
         async createSupplier(supplier){
-            const fb = useFirebaseStore();
-            const suppliersRef = collection(fb.db, "suppliers");
-            await addDoc(suppliersRef, supplier).then((docRef) => {
-                console.log("Document written with ID: ", docRef.id);
-                this.suppliers[docRef.id] = supplier;
-                }).catch((error) => {
-                console.error("Error adding document: ", error);
-            });
+            const sid = await this.helper.addDoc("suppliers", supplier);
+            this.suppliers[sid] = supplier;
         },
-        async addItemToSupplier(sid,iid){
-            console.log("addItemToSupplier", sid, iid);
-            const fb = useFirebaseStore();
-            const supplierRef = doc(fb.db, "suppliers", sid);
-            await setDoc(supplierRef, { items: arrayUnion(iid) }, { merge: true }).then(() => {
-                if (this.suppliers[sid].items){
-                    this.suppliers[sid].items.push(iid);
-                }else{
-                    this.suppliers[sid].items = [iid];
-                }
-                console.log("item added to supplier", sid, iid);
-                }).catch((error) => {
-                console.error("Error adding item to supplier: ", error);
-            });
-        }
+        /**
+         * @param {*} sid - supplier id
+         * @param {*} supplier - supplier object
+         * 
+         * @description
+         * 1. Updates the supplier in the database
+         * 2. Updates the supplier in the suppliers array
+         */
+        async updateSupplier(sid, supplier){
+            await this.helper.setDoc("suppliers", sid, supplier);
+            this.suppliers[sid] = supplier;
+        },
+        /**
+         * @param {*} sid - supplier id
+         * 
+         * @description
+         * 1. Deletes the supplier from the database
+         * 2. Deletes the supplier from the suppliers array
+         * 3. Deletes the supplier from the items array
+         * */
+        async deleteSupplier(sid){
+            await this.helper.deleteDoc("suppliers", sid);
+            delete this.suppliers[sid];
+            products = useProductStore();
+            const item = products.items.filter(item => item.sid == sid);
+            item.sid = null;
+            await this.helper.setDoc("items", item.iid, item);
+        },
+        
     },
     getters: {
         getSupplier: (state) => (sid) => {

@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const createUserApp = require("./src/create-user.js");
+const utils = require("./src/utils/utils.js");
 const db = require("./src/init.js").db;
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -44,23 +45,23 @@ function createSHA1(ts, oid, amt, pref) {
     return shaSSHex;
 }
 
-function timestampToYYYYMMDDHHMMSS() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const second = date.getSeconds();
-    return `${year}${month < 10 ? "0" + month : month}${
-        day < 10 ? "0" + day : day
-    }${hour < 10 ? "0" + hour : hour}${minute < 10 ? "0" + minute : minute}${
-        second < 10 ? "0" + second : second
-    }`;
-}
+// function timestampToYYYYMMDDHHMMSS() {
+//     const date = new Date();
+//     const year = date.getFullYear();
+//     const month = date.getMonth() + 1;
+//     const day = date.getDate();
+//     const hour = date.getHours();
+//     const minute = date.getMinutes();
+//     const second = date.getSeconds();
+//     return `${year}${month < 10 ? "0" + month : month}${
+//         day < 10 ? "0" + day : day
+//     }${hour < 10 ? "0" + hour : hour}${minute < 10 ? "0" + minute : minute}${
+//         second < 10 ? "0" + second : second
+//     }`;
+// }
 
 function chargeUser(oid, amount, cid) {
-    const TIMESTAMP = timestampToYYYYMMDDHHMMSS();
+    const TIMESTAMP = utils.timestampToYYYYMMDDHHMMSS();
     const pref = "376a2598-412d-4805-9f47-c177d5605853";
     const SHA1HASH = createSHA1(TIMESTAMP, oid, amount, pref);
     const data = `<?xml version="1.0" encoding="UTF-8"?>
@@ -114,6 +115,11 @@ exports.onUserCreationCreateCart = functions.firestore
           items: [],
           createdAt: new Date().toISOString(),
         });
+        db.doc(`oldcarts/${userId}`)
+        .set({
+            history: [],
+            createdAt: new Date().toISOString(),
+        });
     });
 exports.scheduledActiveCartOnOpenDate = functions.pubsub.schedule("0 0 * * *")
     .timeZone("Canada/Eastern")
@@ -126,9 +132,9 @@ exports.scheduledActiveCartOnOpenDate = functions.pubsub.schedule("0 0 * * *")
         const timestampFromDate = admin.firestore.Timestamp.fromDate(todayMidnight);
         const timestampFromTomorrow = admin.firestore.Timestamp.fromDate(tomorrowMidnight);
         const cartsScheduledToOpenTodayDocRef = db.collection("carts")
-            .where("active.cartStatus", "==", "disabled")
-            .where("active.opensOn", ">=", timestampFromDate)
-            .where("active.opensOn", "<", timestampFromTomorrow);
+            .where("cartStatus", "==", "disabled")
+            .where("opensOn", ">=", timestampFromDate)
+            .where("opensOn", "<", timestampFromTomorrow);
         return cartsScheduledToOpenTodayDocRef.get().then((querySnapshot) => {
                 if (querySnapshot.empty) {
                     functions.logger.debug("No carts scheduled to open today");
@@ -136,9 +142,7 @@ exports.scheduledActiveCartOnOpenDate = functions.pubsub.schedule("0 0 * * *")
                 querySnapshot.forEach((doc) => {
                     db.doc(`carts/${doc.id}`)
                         .set({
-                            active: {
-                                cartStatus: "active-no-items",
-                            },
+                            cartStatus: "active-no-items",
                         }, {merge: true});
                     const message = {
                         subject: "Your cart is now open",
@@ -177,30 +181,30 @@ exports.scheduledCartCheckouts = functions.pubsub.schedule("0 0 * * *")
         const timestampFromDate = admin.firestore.Timestamp.fromDate(todayMidnight);
         const timestampFromTomorrow = admin.firestore.Timestamp.fromDate(tomorrowMidnight);
         const cartsSheduledForTodayCheckoutDocRef = db.collection("carts")
-            .where("active.cartStatus", "==", "active-with-items")
-            .where("active.closesOn", ">=", timestampFromDate)
-            .where("active.closesOn", "<", timestampFromTomorrow);
+            .where("cartStatus", "==", "active-with-items")
+            .where("closesOn", ">=", timestampFromDate)
+            .where("closesOn", "<", timestampFromTomorrow);
         return db.runTransaction((transaction) => {
             return transaction.get(cartsSheduledForTodayCheckoutDocRef).then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
                     const olderCart = doc.data();
-                    const olderStamps = {
-                        createdAt: olderCart.active.createdAt,
-                        openedOn: olderCart.active.opensOn,
-                        closedOn: olderCart.active.closesOn,
-                    };
+                    // const olderStamps = {
+                    //     createdAt: olderCart.createdAt,
+                    //     openedOn: olderCart.opensOn,
+                    //     closedOn: olderCart.closesOn,
+                    // };
                     const oid = Math.random().toString(36).substring(2, 15).toUpperCase();
-                    const total = cartTotal(olderCart.active.items);
+                    const total = cartTotal(olderCart.items);
                     transaction.update(doc.ref, {
-                        active: newCart,
-                        history: admin.firestore.FieldValue.arrayUnion({
-                            oid: oid,
-                            createdAt: olderStamps.createdAt,
-                            openedOn: olderStamps.openedOn,
-                            closedOn: olderStamps.closedOn,
-                            items: olderCart.active.items,
-                            total: total,
-                        }),
+                        newCart,
+                        // // history: admin.firestore.FieldValue.arrayUnion({
+                        // //     oid: oid,
+                        // //     createdAt: olderStamps.createdAt,
+                        // //     openedOn: olderStamps.openedOn,
+                        // //     closedOn: olderStamps.closedOn,
+                        // //     items: olderCart.items,
+                        // //     total: total,
+                        // }),
                     });
                     chargeUser(oid, total, doc.id);
                 });
@@ -230,29 +234,29 @@ exports.scheduledCloseEmptyCartsDueToday = functions.pubsub.schedule("0 0 * * *"
         const timestampFromDate = admin.firestore.Timestamp.fromDate(todayMidnight);
         const timestampFromTomorrow = admin.firestore.Timestamp.fromDate(tomorrowMidnight);
         const emptyCartsSheduledForTodayCheckoutDocRef = db.collection("carts")
-            .where("active.cartStatus", "==", "active-no-items")
-            .where("active.closesOn", ">=", timestampFromDate)
-            .where("active.closesOn", "<", timestampFromTomorrow);
+            .where("cartStatus", "==", "active-no-items")
+            .where("closesOn", ">=", timestampFromDate)
+            .where("closesOn", "<", timestampFromTomorrow);
             return db.runTransaction((transaction) => {
                 return transaction.get(emptyCartsSheduledForTodayCheckoutDocRef).then((querySnapshot) => {
                     querySnapshot.forEach((doc) => {
-                        const olderCart = doc.data();
-                        const olderStamps = {
-                            createdAt: olderCart.active.createdAt,
-                            openedOn: olderCart.active.opensOn,
-                            closedOn: olderCart.active.closesOn,
-                        };
-                        const oid = Math.random().toString(36).substring(2, 15).toUpperCase();
+                        // const olderCart = doc.data();
+                        // const olderStamps = {
+                        //     createdAt: olderCart.createdAt,
+                        //     openedOn: olderCart.opensOn,
+                        //     closedOn: olderCart.closesOn,
+                        // };
+                        // const oid = Math.random().toString(36).substring(2, 15).toUpperCase();
                         transaction.update(doc.ref, {
-                            active: newCart,
-                            history: admin.firestore.FieldValue.arrayUnion({
-                                oid: oid,
-                                createdAt: olderStamps.createdAt,
-                                openedOn: olderStamps.openedOn,
-                                closedOn: olderStamps.closedOn,
-                                items: olderCart.active.items,
-                                total: 0,
-                            }),
+                            newCart,
+                            // history: admin.firestore.FieldValue.arrayUnion({
+                            //     oid: oid,
+                            //     createdAt: olderStamps.createdAt,
+                            //     openedOn: olderStamps.openedOn,
+                            //     closedOn: olderStamps.closedOn,
+                            //     items: olderCart.items,
+                            //     total: 0,
+                            // }),
                         });
                     });
                 });
@@ -279,9 +283,9 @@ exports.scheduledCartReminders = functions.pubsub.schedule("0 0 * * *")
             html: "Your cart is scheduled to close tomorrow",
         };
         const cartsSheduledForTomorrowCheckoutDocRef = db.collection("carts")
-            .where("active.cartStatus", "in", ["active-with-items", "active-no-items"])
-            .where("active.closesOn", ">=", timestampFromTomorrow)
-            .where("active.closesOn", "<", timestampFromDayAfterTomorrow);
+            .where("cartStatus", "in", ["active-with-items", "active-no-items"])
+            .where("closesOn", ">=", timestampFromTomorrow)
+            .where("closesOn", "<", timestampFromDayAfterTomorrow);
         return db.runTransaction((transaction) => {
             return transaction.get(cartsSheduledForTomorrowCheckoutDocRef).then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {

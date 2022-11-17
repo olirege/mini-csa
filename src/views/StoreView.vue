@@ -16,7 +16,7 @@ export default ({
             cartStore.removeFromCart(pid,iid)
         }
         function onCheckout() {
-            cartStore.checkout()
+            // cartStore.checkout()
         }
     return {
         products: productStore.products,

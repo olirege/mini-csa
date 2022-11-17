@@ -127,7 +127,6 @@ export default ({
         const newProduct = reactive({
             name: '',
             description: '',
-            deleted: false,
         })
 
         const newItem = reactive({
@@ -136,15 +135,22 @@ export default ({
             stock: '',
             description: '',
             image: '',
-            sid: selectedSid,
-            deleted: false,
+            supplier: {
+                sid: selectedSid,
+                name: selectedSid? supplierStore.suppliers[selectedSid].name : '',
+            },
+            pid: selectedPid,
         })
         const updateItem = reactive({
             name: '',
             price: '',
             image: '',
             description: '',
-            sid: selectedSid,
+            pid: selectedPid,
+            supplier: {
+                sid: selectedSid,
+                name: supplierStore.suppliers[selectedSid].name,
+            },
         })
         const updateProduct = reactive({
             name: '',
@@ -164,7 +170,7 @@ export default ({
         function onCreateItem(){
             if (selectedPid && Object.values(newItem).every((value) => value !== '')) {
                 const unReactiveObj =  {...newItem}
-                productStore.createItem(selectedPid.value, unReactiveObj )
+                productStore.createItem(unReactiveObj )
             }
             resetObjectFields(newItem)
         }
@@ -184,7 +190,7 @@ export default ({
                         delete unReactiveObj[key]
                     }
                 }
-                productStore.updateItem(selectedPid.value, selectedIid.value, unReactiveObj)
+                productStore.updateItem(selectedIid.value, unReactiveObj)
             }
             resetObjectFields(updateItem)
             resetIdsFields()

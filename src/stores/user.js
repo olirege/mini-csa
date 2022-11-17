@@ -1,63 +1,85 @@
 import { defineStore } from 'pinia'
-import { getDoc, setDoc, doc} from "firebase/firestore";
 import { useFirebaseStore } from './firebase';
-import { useCartStore } from './cart';
-import { ref } from 'vue'
-import axios from 'axios'
+import { useHelperStore } from './helpers';
 export const useUserStore = defineStore('user', {
     state: () => ({
-      user: ref(null),
-      userProfile: ref(null),
-      // ...
+      user: null,
+      userProfile: "",
+      helper: useHelperStore(),
     }),
     actions: {
-        setUserAndCart(user) {
+        /**
+         * 
+         * @param {*} user - user object
+         * 
+         * @description
+         * 1. Sets the user
+         */
+        setUser(user) {
             this.user = user;
-            this.initCart(user.uid);
         },
-        async initCart(uid) {
-            console.log("initCart");
-            const cartStore = useCartStore();
-            cartStore.loadCart(uid);
+        /**
+         * 
+         * @description
+         * 1. Gets the user profile from the database
+         * 2. Sets the user profile
+         */
+        async getProfile(){
+            this.userProfile = await this.helper.getDoc("users", this.user.uid);
+        },
+        /**
+         * 
+         * @description
+         * 1. Updates the user profile in the database
+         */
+        async saveProfileChanges(){
+            await this.helper.setDoc("users", this.user.uid, this.userProfile);
         },
         
-        async fetchProfile(){
-            console.log("fetchProfile");
-            const fb = useFirebaseStore();
-            const userRef = doc(fb.db, "users", this.user.uid);
-            const userDoc = await getDoc(userRef);
-            if (userDoc.exists()) {
-                this.userProfile = userDoc.data();
-            } else {
-                console.log("No such document!");
-            }
-        },
-        async saveProfileChanges(){
-            console.log("saveProfileChanges");
-            const fb = useFirebaseStore();
-            const userRef = doc(fb.db, "users", this.user.uid);
-            await setDoc(userRef, this.userProfile);
-        },
+        /**
+         * 
+         * @param {*} cc
+         * 
+         * @description
+         * 1. Posts request to the server to remove the credit card 
+         */
         async removeCC(cc){
             const fb = useFirebaseStore();
-            axios({
-                method: 'post',
-                url: fb.api.removeCC,
-                data: {
+            this.helper.useRESTfulAPI(
+                fb.api.removeCC,
+                "POST",
+                {
                     ...cc,
                     uid: this.user.uid,
                 }
-            }).then( (response) => {
+            ).then((response) => {
                 console.log(response);
-            }).catch( (error) => {
+            }).catch((error) => {
                 console.log(error);
             });
-        }
+        },
+
     },
     getters: {
+        /**
+         * 
+         * @param {*} state - state object
+         * @returns - boolean
+         * 
+         * @description
+         * 1. Checks if the user is logged in
+         */
         isLogged: (state) => {
             return state.user != null;
         },
+        /**
+         * 
+         * @param {*} state - state object
+         * @returns - boolean
+         * 
+         * @description
+         * 1. Checks if the user is an admin
+         */
         isAdmin: (state) => {
             return state.userProfile != null && state.userProfile.isAdmin;
         }

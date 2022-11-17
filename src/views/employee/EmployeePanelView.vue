@@ -16,6 +16,15 @@
     </div>
 </template>
 <script>
+import { useSuppliersStore } from '../../stores/suppliers'
+export default ({
+    setup() {
+        const suppliersStore = useSuppliersStore()
+        suppliersStore.loadSuppliers()
+        return {
+        }
+    }
+})
 </script>
 <style scoped>
 .page-wrapper {
