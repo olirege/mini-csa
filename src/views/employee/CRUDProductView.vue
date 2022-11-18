@@ -137,7 +137,7 @@ export default ({
             image: '',
             supplier: {
                 sid: selectedSid,
-                name: selectedSid? supplierStore.suppliers[selectedSid].name : '',
+                name: selectedSid && supplierStore.suppliers[selectedSid] ? supplierStore.suppliers[selectedSid].name : '',
             },
             pid: selectedPid,
         })
@@ -149,7 +149,7 @@ export default ({
             pid: selectedPid,
             supplier: {
                 sid: selectedSid,
-                name: supplierStore.suppliers[selectedSid].name,
+                name: selectedSid && supplierStore.suppliers[selectedSid] ? supplierStore.suppliers[selectedSid].name : '',
             },
         })
         const updateProduct = reactive({
