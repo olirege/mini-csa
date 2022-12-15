@@ -20,8 +20,10 @@ import {
   onSnapshot,
   increment,
   updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { useFirebaseStore } from "./firebase";
+import { usePaymentStore } from "./payment";
 import {
   getDownloadURL,
   ref,
@@ -33,6 +35,28 @@ import axios from "axios";
 export const useHelperStore = defineStore("helpers", {
   state: () => ({
     fb: useFirebaseStore(),
+    currency: usePaymentStore().currency,
+    colors : [
+      {dark:'rgb(25,135,84)', light: 'rgb(25,135,84, 0.8)', lighter: 'rgb(25,135,84, 0.3)'},
+      {dark:'rgb(255, 99, 132)', light: 'rgb(255, 99, 132, 0.8)', lighter: 'rgb(255, 99, 132, 0.3)'},
+      {dark:'rgb(91, 192, 222)',  light: 'rgb(91, 192, 222, 0.8)', lighter: 'rgb(91, 192, 222, 0.3)'},
+      {dark:'rgb(255, 159, 64)', light: 'rgb(255, 159, 64, 0.8)', lighter: 'rgb(255, 159, 64, 0.3)'},
+      {dark:'rgb(255, 205, 86)', light: 'rgb(255, 205, 86, 0.8)', lighter: 'rgb(255, 205, 86, 0.3)'},
+      {dark:'rgb(75, 192, 192)', light: 'rgb(75, 192, 192, 0.8)', lighter: 'rgb(75, 192, 192, 0.3)'},
+      {dark:'rgb(54, 162, 235)', light: 'rgb(54, 162, 235, 0.8)', lighter: 'rgb(54, 162, 235, 0.3)'},
+      {dark:'rgb(41, 43, 44)',light: 'rgb(41, 43, 44, 0.8)', lighter: 'rgb(41, 43, 44, 0.3)'},
+    ],
+    colorCodes: {
+        success: 0,
+        danger: 1,
+        info: 2,
+        warning: 3,
+        primary: 4,
+        secondary: 5,
+        light: 6,
+        dark: 7,
+    },
+    globalLoading: false,
   }),
   actions: {
     /**
@@ -59,7 +83,6 @@ export const useHelperStore = defineStore("helpers", {
       if (docSnap.exists()) {
         return docSnap.data();
       } else {
-        console.log("No such document!");
         return null;
       }
     },
@@ -186,9 +209,9 @@ export const useHelperStore = defineStore("helpers", {
 	  limit(_limit)
 	  );
 	  const querySnapshot = await getDocs(q);
-	  const docs = [];
+	  const docs = {};
 	  querySnapshot.forEach((doc) => {
-		docs.push(doc.data());
+		docs[doc.id] = doc.data();
 	  });
 	  return docs;
 	},
@@ -314,7 +337,8 @@ export const useHelperStore = defineStore("helpers", {
 		);
 		const docs = {};
 		querySnapshot.forEach((doc) => {
-		  docs[doc.id] = doc.data();
+      //@ts-ignore
+		  docs[doc.id] = {data: doc.data(), parent: doc.ref.parent.parent.id};
 		});
 		return docs;
 	},
@@ -335,16 +359,15 @@ export const useHelperStore = defineStore("helpers", {
      *
      */
     async setDoc(collection, id, data) {
-      // @ts-ignore
-      const docRef = doc(this.fb.db, collection, id);
-      await setDoc(docRef, data, { merge: true })
-        .then(() => {
-          return true;
-        })
-        .catch((error) => {
-          console.error("Error updating document: ", error);
-          return false;
-        });
+      try{
+        // @ts-ignore
+        const docRef = doc(this.fb.db, collection, id);
+        await setDoc(docRef, data, { merge: true })
+        return true
+      }catch(e){
+        console.log('Error during setting document:',  e)
+        return false
+      }
     },
     /**
      *
@@ -369,13 +392,6 @@ export const useHelperStore = defineStore("helpers", {
       // @ts-ignore
       const docRef = doc(this.fb.db, collection, id, subcollection, subid);
       await setDoc(docRef, data, { merge: true })
-        .then(() => {
-          return true;
-        })
-        .catch((error) => {
-          console.error("Error updating document: ", error);
-          return false;
-        });
     },
     /**
      *
@@ -395,15 +411,15 @@ export const useHelperStore = defineStore("helpers", {
      *
      */
     async addDoc(_collection, data) {
-      // @ts-ignore
-      await addDoc(collection(this.fb.db, _collection), data)
-        .then((docRef) => {
-          return docRef.id;
-        })
-        .catch((error) => {
-          console.error("Error adding document: ", error);
-          return false;
-        });
+      try{
+        // @ts-ignore
+        const docRef = await addDoc(collection(this.fb.db, _collection), data)
+        return docRef.id;
+      }
+      catch(e){
+        console.log('Error during adding document:',  e)
+        return false
+      }
     },
     /**
      *
@@ -447,16 +463,15 @@ export const useHelperStore = defineStore("helpers", {
      * await deleteDoc("users", "1234");
      *
      */
-    async deleteDoc(collection, id) {
-      // @ts-ignore
-      await deleteDoc(doc(this.fb.db, collection, id))
-        .then(() => {
-          return true;
-        })
-        .catch((error) => {
-          console.error("Error removing document: ", error);
-          return false;
-        });
+     async deleteDoc(collection, id) {
+      try {
+        // @ts-ignore
+        await deleteDoc(doc(this.fb.db, collection, id));
+        return true;
+      } catch (error) {
+        console.error("Error removing document: ", error);
+        return false;
+      }
     },
     /**
      *
@@ -498,14 +513,8 @@ export const useHelperStore = defineStore("helpers", {
     async uploadAFileToStorage(file, path) {
       // @ts-ignore
       const storageRef = ref(this.fb.storage, path);
-      await uploadBytes(storageRef, file)
-        .then((snapshot) => {
-          return snapshot;
-        })
-        .catch((error) => {
-          console.error("Error uploading file: ", error);
-          return false;
-        });
+      const snapshot = await uploadBytes(storageRef, file)
+        return snapshot;
     },
     /**
      *
@@ -529,29 +538,39 @@ export const useHelperStore = defineStore("helpers", {
 		throw new Error("Error getting download url");
 	  }
     },
-    /**
-     *
-     * @param {String} path
-     * @returns - confirmation in the form of a promise
-     *
-     * This function is used to delete a file from the storage bucket
-     *
-     * @example
-     * await deleteFile("images/1234.jpg");
-     *
-     */
+
     async deleteFile(path) {
       // @ts-ignore
       const storageRef = ref(this.fb.storage, path);
+      //check if root reference
+      if (storageRef.fullPath === storageRef.root.fullPath) {
+        throw new Error("Cannot delete root reference");
+      }
       await deleteObject(storageRef)
-        .then(() => {
-          return true;
-        })
-        .catch((error) => {
-          console.error("Error deleting file: ", error);
-          return false;
-        });
     },
+    // /**
+    //  *
+    //  * @param {String} path
+    //  * @returns - confirmation in the form of a promise
+    //  *
+    //  * This function is used to delete a file from the storage bucket
+    //  *
+    //  * @example
+    //  * await deleteFile("images/1234.jpg");
+    //  *
+    //  */
+    // async deleteFile(path) {
+    //   // @ts-ignore
+    //   const storageRef = ref(this.fb.storage, path);
+    //   await deleteObject(storageRef)
+    //     .then(() => {
+    //       return true;
+    //     })
+    //     .catch((error) => {
+    //       console.error("Error deleting file: ", error);
+    //       return false;
+    //     });
+    // },
     /**
      *
      * @param {String} collection
@@ -647,6 +666,24 @@ export const useHelperStore = defineStore("helpers", {
 		  [field]: increment(value),
 		});
 	},
+
+  /**
+   *  
+   * @param {*} collection 
+   * @param {*} id 
+   * @param {Array.<String>} fields 
+   * @param {Array.<Number>} values 
+   */
+  async incrementFields(collection, id, fields,values) {
+    // @ts-ignore
+    const length = fields.length;
+    const obj = {};
+    for (let i = 0; i < length; i++) {
+      obj[fields[i]] = increment(values[i]);
+    }
+    // @ts-ignore
+    await updateDoc(doc(this.fb.db, collection, id), obj);
+  },
 	/**
 	 * 
 	 * @param {String} collection 
@@ -683,14 +720,14 @@ export const useHelperStore = defineStore("helpers", {
      * console.log(response);
      *
      */
-    async useRESTfulAPI(url, method, data, headers) {
+    async useRESTfulAPI(url, method, data=null, headers=null) {
       const resp = await axios({
-        method: method,
-        url: url,
-        data: data,
-        headers: headers,
-      })
-	  return resp;
+          method: method,
+          url: url,
+          data: data,
+          headers: headers,
+        })
+      return resp;
     },
     /**
      *
@@ -730,6 +767,19 @@ export const useHelperStore = defineStore("helpers", {
         return date;
       }
     },
+    timestampFactory(){
+      return Timestamp.fromDate(new Date());
+    },
+    timestampFormatter(timestamp){
+      const unixTimestamp = timestamp.toMillis();
+      const date = new Date(unixTimestamp);
+      const dateString = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      return dateString
+    },
     /**
      *
      * @param {String} string - the string to be sanitized
@@ -766,14 +816,107 @@ export const useHelperStore = defineStore("helpers", {
      * */
     sanitizeObject(object) {
       Object.keys(object).forEach((key) => {
-        if (typeof object[key] === "string") {
+        if (typeof object[key] === "string" ) {
           object[key] = this.sanitizeString(object[key]);
         }
-        if (object[key] === "") {
+        if (typeof object[key] === "object" ) {
+          object[key] = this.sanitizeObject(object[key]);
+        }
+        if (object[key] === "" || object[key] === null || object[key] === undefined) {
           delete object[key];
         }
       });
       return object;
+    },
+    
+    lazySanitizeObject(object) {
+      Object.keys(object).forEach((key) => {
+        if (object[key] === "" ) {
+          delete object[key];
+        }
+      });
+      return object;
+    },
+      
+          
+    /**
+     * @param {Number} number - the number to format
+     * @returns - the formatted number
+     * 
+     * @description This function is used to format a number to a currency string
+     * 
+     * @example
+     * const formattedNumber = formatNumberToCurrency(1000, "USD");
+     * console.log(formattedNumber);
+     * // $1,000.00
+     * 
+     */
+    formatNumberToCurrency(number) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: this.currency,
+      }).format(number);
+    },
+    /**
+     * 
+     * @param {String} string - the string to format
+     * @param {Number} start - the start index
+     * @param {Number} end - the end index
+     * @param {Boolean} addEllipsis - boolean to add ellipsis 
+     * @param {Boolean} addSpaces - boolean to add spaces
+     * @param {String} position - the position to add spaces [middle, end]
+     * @returns -formatted string
+     * 
+     * @description This function is used to format a string to a certain length
+     * 
+     * @example
+     * const formattedString = formatString("Hello World", 5, true, true, "end");
+     * console.log
+     * // Hello...
+     * 
+     * const formattedString = formatString("Hello World", 5, true, true, "middle");
+     * console.log
+     * // He...ld
+     */
+    formatStringToSubstring(string, start, end, addEllipsis = true, addSpaces = false, position = "end") {
+      if (string.length > end) {
+        if (position === "end") {
+          if (addEllipsis) {
+            if (addSpaces) {
+              return string.substring(start, end) + " ...";
+            } else {
+              return string.substring(start, end) + "...";
+            }
+          } else {
+            return string.substring(start, end);
+          }
+        } else if (position === "middle") {
+          if (addEllipsis) {
+            if (addSpaces) {
+              return string.substring(start, end) + " ... " + string.substring(string.length - end, string.length);
+            } else {
+              return string.substring(start, end) + "..." + string.substring(string.length - end, string.length);
+            }
+          } else {
+            return string.substring(start, end) + string.substring(string.length - end, string.length);
+          }
+        }
+      } else {
+        return string;
+      }
+    },
+    capitalize(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    formatTelephone(string) {
+      // formats to (123) 456-7890
+      const cleaned = ("" + string).replace(/\D/g, "");
+      const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+      if (match) {
+        return "(" + match[1] + ") " + match[2] + "-" + match[3];
+      } else {
+        return null;
+      }
     },
   },
   getters: {

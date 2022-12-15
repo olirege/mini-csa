@@ -50,7 +50,7 @@
 <script>
 import { useSuppliersStore } from '../../stores/suppliers';
 import { ref,reactive } from 'vue';
-import TheModal from '../../components/TheModal.vue';
+import TheModal from '../../components/common/TheModal.vue';
 export default{
     components: {
         TheModal

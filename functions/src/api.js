@@ -5,7 +5,6 @@ const admin = require("firebase-admin");
 const bodyParser = require("body-parser");
 const api = express();
 const xmls = require("./utils/xmls");
-// const api = express();
 const axios = require("axios");
 const DOMParser = require("xmldom").DOMParser;
 const {db, auth, globals} = require("./init.js");
@@ -15,46 +14,17 @@ const AMOUNT = globals.AMOUNT;
 const CURRENCY = globals.CURRENCY;
 const SS = globals.SS;
 const PAYER_REF = globals.PAYER_REF;
-const PMT_REF = globals.PMT_REF;
+// const PMT_REF = globals.PMT_REF;
 const ACCOUNT = globals.ACCOUNT;
-// function createOid() {
-//   return Math.random().toString(36).substring(2, 15);
-// }
-// function createSHA1(oid, ts) {
-//   const sha1 = CryptoJS.SHA1(
-//     `${ts}.${MERCHANT_ID}.${oid}.${AMOUNT}.${CURRENCY}.${PAYER_REF}.${PMT_REF}`);
-//   const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
-//   const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
-//   return shaSSHex;
-// }
-// function createDELETESHA1(ts, pmtRef, payerRef) {
-//   const sha1 = CryptoJS.SHA1(
-//     `${ts}.${MERCHANT_ID}.${payerRef}.${pmtRef}`);
-//   const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
-//   const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
-//   return shaSSHex;
-// }
-// function timestampToYYYYMMDDHHMMSS() {
-//   const date = new Date();
-//   const year = date.getFullYear();
-//   const month = date.getMonth() + 1;
-//   const day = date.getDate();
-//   const hour = date.getHours();
-//   const minute = date.getMinutes();
-//   const second = date.getSeconds();
-//   return `${year}${month < 10 ? "0" + month : month}${
-//       day < 10 ? "0" + day : day
-//   }${hour < 10 ? "0" + hour : hour}${minute < 10 ? "0" + minute : minute}${
-//       second < 10 ? "0" + second : second
-//   }`;
-// }
+
 api.use(bodyParser.json());
 api.use(cors({origin: true}));
 
 api.get("/getRealexHpp", (req, res) => {
   const ORDER_ID = utils.createOid();
   const TIMESTAMP = utils.timestampToYYYYMMDDHHMMSS();
-  const SHA1HASH = utils.createSHA1(TIMESTAMP, ORDER_ID, MERCHANT_ID, AMOUNT, CURRENCY, PAYER_REF, PMT_REF, SS);
+
+  const SHA1HASH = utils.createADDSHA1(TIMESTAMP, ORDER_ID, MERCHANT_ID, AMOUNT, CURRENCY, PAYER_REF, "", SS);
   res.status(200).json({
     MERCHANT_ID: MERCHANT_ID,
     AMOUNT: AMOUNT,
@@ -157,20 +127,11 @@ api.post("/removeCC", (req, res) => {
   delete ccToRemove.uid;
   functions.logger.debug("Removing CC");
   const TIMESTAMP = utils.timestampToYYYYMMDDHHMMSS();
+  functions.logger.debug("TIMESTAMP", TIMESTAMP);
   const ORDER_ID = utils.createOid();
-  const SHA1HASH = utils.createDELETESHA1(TIMESTAMP, MERCHANT_ID, ccToRemove.SAVED_PMT_REF, ccToRemove.SAVED_PAYER_REF, SS);
-  const data = xmls.deleteForm(MERCHANT_ID, ORDER_ID, TIMESTAMP, ccToRemove.SAVED_PMT_REF, ccToRemove.SAVED_PAYER_REF, SHA1HASH);
-  // const data = `<?xml version="1.0" encoding="UTF-8"?>
-  //             <request type="card-cancel-card" timestamp="${TIMESTAMP}">
-  //             <merchantid>${MERCHANT_ID}</merchantid>
-  //             <account>internet</account>
-  //             <orderid>${ORDER_ID}</orderid>
-  //             <card>
-  //               <ref>${ccToRemove.SAVED_PMT_REF}</ref>
-  //               <payerref>${ccToRemove.SAVED_PAYER_REF}</payerref>
-  //             </card>
-  //             <sha1hash>${SHA1HASH}</sha1hash>
-  //             </request>`;
+  const SHA1HASH = utils.createDELETESHA1(TIMESTAMP, MERCHANT_ID, ccToRemove.SAVED_PAYER_REF, ccToRemove.SAVED_PMT_REF, SS);
+  const data = xmls.deleteForm(TIMESTAMP, MERCHANT_ID, ORDER_ID, ACCOUNT, ccToRemove.SAVED_PMT_REF, ccToRemove.SAVED_PAYER_REF, SHA1HASH);
+  functions.logger.debug("data", data);
   axios({
       method: "post",
       url: "https://api.sandbox.realexpayments.com/epage-remote.cgi",
@@ -180,6 +141,7 @@ api.post("/removeCC", (req, res) => {
       },
   }).then((xmlResponse) => {
     const doc = new DOMParser().parseFromString(xmlResponse.data);
+    functions.logger.debug("delete,doc", doc.getElementsByTagName("message")[0].childNodes[0].nodeValue);
     const result = doc.getElementsByTagName("result")[0].childNodes[0].nodeValue;
     if (result === "00") {
       functions.logger.debug("CC Removed Successfully from Realex");

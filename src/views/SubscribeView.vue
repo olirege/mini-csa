@@ -1,5 +1,5 @@
 <script>
-import { reactive, onMounted,ref } from "vue";
+import { reactive, onMounted, ref } from "vue";
 import { useTextStore } from "../stores/text";
 import { useFirebaseStore } from "../stores/firebase";
 import { useUserStore } from "../stores/user";

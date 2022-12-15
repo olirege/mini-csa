@@ -30,7 +30,11 @@ export const useReviewsStore = defineStore("reviews", {
          */
         async getItemReviews(iid){
             this.helper.getDoc("reviews",iid).then((reviews) => {
-                this.itemReviews = reviews;
+                if(reviews){
+                    this.itemReviews = reviews;
+                }else{
+                    this.itemReviews = {};
+                }
             });
         },
         /**
@@ -47,8 +51,10 @@ export const useReviewsStore = defineStore("reviews", {
             const uid = useUserStore().user.uid;
             const data = {}
             data[uid] = review;
-            this.itemReviews[iid] = data;
-            await this.helper.setDoc("reviews", iid, data )
+            const resp = await this.helper.setDoc("reviews", iid, data )
+            await data.timestamp
+            this.itemReviews[uid] = data;
+            return resp;
         },
         /**
          * 
@@ -75,8 +81,19 @@ export const useReviewsStore = defineStore("reviews", {
          * 1. Checks if a logged user as already reviewed an item
          */    
         hasUserReviewed(){
-            const user = useUserStore();
-            return this.itemReviews[user.user.uid] != null;
+            const userStore = useUserStore();
+            const uid = userStore.user.uid;
+            for(let key of Object.keys(this.itemReviews)){
+                if(key === uid){
+                    return true;
+                }
+            }
+            return false;
+        },
+    },
+    getters: {
+        getAmountAllReviews: (state) => {
+            return Object.keys(state.reviews).length;
         },
     },
 });

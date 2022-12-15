@@ -1,9 +1,8 @@
 const CryptoJS = require("crypto-js");
-const db = require("../init.js").db;
+const {db, globals} = require("../init.js");
 const axios = require("axios");
 const DOMParser = require("xmldom").DOMParser;
 const functions = require("firebase-functions");
-
 exports.timestampToYYYYMMDDHHMMSS = function() {
         const date = new Date();
         const year = date.getFullYear();
@@ -18,16 +17,16 @@ exports.timestampToYYYYMMDDHHMMSS = function() {
             second < 10 ? "0" + second : second
         }`;
     };
-exports.createSHA1 = function(TIMESTAMP, ORDER_ID, MERCHANT_ID, AMOUNT, CURRENCY, PAYER_REF, PMT_REF, SS) {
+exports.createADDSHA1 = function(TIMESTAMP, ORDER_ID, MERCHANT_ID, AMOUNT, CURRENCY, PAYER_REF, PMT_REF, SS) {
     const sha1 = CryptoJS.SHA1(
         `${TIMESTAMP}.${MERCHANT_ID}.${ORDER_ID}.${AMOUNT}.${CURRENCY}.${PAYER_REF}.${PMT_REF}`);
     const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
     const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
     return shaSSHex;
     };
-exports.createDELETESHA1 = function(TIMESTAMP, MERCHANT_ID, PMT_REF, PAYER_REF, SS) {
+exports.createDELETESHA1 = function(TIMESTAMP, MERCHANT_ID, PAYER_REF, PMT_REF, SS) {
     const sha1 = CryptoJS.SHA1(
-        `${TIMESTAMP}.${MERCHANT_ID}.${PMT_REF}.${PAYER_REF}`);
+        `${TIMESTAMP}.${MERCHANT_ID}.${PAYER_REF}.${PMT_REF}`);
     const shaSS = CryptoJS.SHA1(sha1.toString(CryptoJS.enc.Hex) + "." + SS);
     const shaSSHex = shaSS.toString(CryptoJS.enc.Hex);
     return shaSSHex;
@@ -113,4 +112,10 @@ exports.sendEmailToCustomer = function(cid, message) {
         .then(() => console.log("Queued email for delivery!"));
         }
     });
+};
+exports.convertUnitIntoGrams = function(unit, weight) {
+    if (!globals.conversionFactor.prototype.hasOwnProperty.call(globals.conversionFactor, unit)) {
+        throw new Error(`Unknown unit: ${unit}`);
+    }
+    return weight * globals.conversionFactor[unit];
 };

@@ -6,7 +6,7 @@ import ProductView from "../views/ProductView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import EmployeePanelView from "../views/employee/EmployeePanelView.vue";
 import CRUDProductView from "../views/employee/CRUDProductView.vue";
-import InventoryView from "../views/employee/InventoryView.vue";
+import FinishedProductsView from "../views/employee/FinishedProductsView.vue";
 import OrdersView from "../views/employee/OrdersView.vue";
 import ScheduleView from "../views/employee/ScheduleView.vue";
 import SuppliersView from "../views/employee/SuppliersView.vue";
@@ -28,7 +28,7 @@ const router = createRouter({
     },
     {
       path: "/store",
-      name: "store",
+      name: "Store",
       component: StoreView,
     },
     {
@@ -39,53 +39,53 @@ const router = createRouter({
     },
     {
       path: "/profile/",
-      name: "profile",
+      name: "Profile",
       component: ProfileView,
     },
     {
       path: "/order/view/:id",
-      name: "order",
+      name: "Order",
       component: OrderDetailView,
       props:true,
     },
     {
       path: "/employeepanel",
-      name: "employee",
+      name: "Employee Panel",
       component: EmployeePanelView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "crudproducts",
+      name: "Crudproducts",
       path: "/employeepanel/crudproducts",
       component: CRUDProductView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "inventory",
-      path: "/employeepanel/inventory",
-      component: InventoryView,
+      name: "Finished Products",
+      path: "/employeepanel/finishedproducts",
+      component: FinishedProductsView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "orders",
+      name: "Orders",
       path: "/employeepanel/orders",
       component: OrdersView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "schedule",
+      name: "Schedule",
       path: "/employeepanel/schedule",
       component: ScheduleView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "reviews",
+      name: "Reviews",
       path: "/employeepanel/reviews",
       component: ReviewsView,
       // meta: { requiresAuth: true },
     },
     {
-      name: "suppliers",
+      name: "Suppliers",
       path: "/employeepanel/suppliers",
       component: SuppliersView,
       // meta: { requiresAuth: true },

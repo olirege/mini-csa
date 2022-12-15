@@ -63,5 +63,8 @@ export const useSuppliersStore = defineStore("suppliers", {
         getSupplier: (state) => (sid) => {
             return state.suppliers[sid];
         },
+        getAmountSuppliers: (state) => {
+            return Object.keys(state.suppliers).length;
+        },
     },
 });

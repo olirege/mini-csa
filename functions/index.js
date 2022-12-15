@@ -7,5 +7,9 @@ exports.scheduledCloseEmptyCartsDueToday = scheduledFunctions.scheduledCloseEmpt
 exports.scheduledCartCheckouts = scheduledFunctions.scheduledCartCheckouts;
 exports.scheduledActiveCartOnOpenDate = scheduledFunctions.scheduledActiveCartOnOpenDate;
 exports.onUserCreationCreateCart = funcs.onUserCreationCreateCart;
+exports.onScheduledCheckoutAdjustItemToPickup = funcs.onScheduledCheckoutAdjustItemToPickup;
+exports.onOrderScannedItemUpdate = funcs.onOrderScannedItemUpdate;
+exports.onWriteIngredientAdjustToGram = funcs.onWriteIngredientAdjustToGram;
 exports.api = api.api;
 exports.createUser = api.createUser;
+

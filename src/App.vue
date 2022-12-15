@@ -3,82 +3,82 @@ import { useRouter } from "vue-router";
 import { useFirebaseStore } from "./stores/firebase";
 import { useUserStore } from './stores/user';
 import { useProductStore } from "./stores/products";
+import { useHelperStore } from "./stores/helpers";
+import TheSideMenu from "./components/sidebars/TheSideMenu.vue";
+import TheHeader from "./components/sidebars/TheHeader.vue";
+import { computed } from 'vue'
 export default {
+  components: {
+    TheSideMenu,
+    TheHeader,
+  },
   setup() {
     const router = useRouter();
     const fb = useFirebaseStore();
     const userStore = useUserStore();
     const productStore = useProductStore();
+    const helper = useHelperStore();
+    const currentRoute = computed(() => router.currentRoute.value.name);
+    
+    const products = computed(() => productStore.products);
+    const items = computed(() => productStore.items);
+    
     fb.init().then(() => {
+      helper.globalLoading = true;
       productStore.getProductTree()
-    });
+      .then(()=>{
+        if(areAllImagesLoaded.value) {
+          helper.globalLoading = false;
+        }
+      })
+    })
+    
     router.beforeEach((to, from, next) => {
       if (to.meta.requiresAuth && !userStore.isAdmin) {
-        next({ name: "store" });
+        next({ name: "Store" });
       } else {
         next();
       }
     });
-    return {userStore};
+    
+    const areAllImagesLoaded = computed(() => {
+      const _products = Object.values(products.value);
+      const _items = Object.values(items.value);
+      const p = _products.every(product => product.storeImage.complete)
+      const i = _items.every(item => item.images.bigRef.complete);
+      return p && i;
+    });
+    
+    return {
+    userStore,
+    currentRoute,
+    };
   },
 };
 </script>
 
 <template>
   <main>
-    <header>
-      <div>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/store">Store</RouterLink>
-        <RouterLink v-if ='userStore.isLogged' to="/profile">Profile</RouterLink>
-        <RouterLink to="/employeepanel">Employee Panel</RouterLink>
-      </div>
-    </header>
     <div class="view-wrapper">
+      <TheSideMenu v-if="currentRoute !== 'home'"/>
+      <TheHeader v-if="currentRoute !== 'home'"/>
       <RouterView/>
     </div>
-    <footer>
-      <div>
-        <p>© 2021 - All rights reserved</p>
-      </div>
-    </footer>
   </main>
 </template>
 
 <style scoped>
 main {
   position:fixed;
-  top:var(--header-height);
-  height:calc(100vh - var(--header-height) - var(--footer-height));
+  /* top:var(--header-height); */
+  /* height:calc(100vh - var(--header-height) - var(--footer-height)); */
+  top: 0;
+  height: 100vh;
   left:0;
   display: flex;
   flex-direction: column;
   width: 100vw;
   background-color: #f5f5f5;
-}
-header {
-  position:fixed;
-  top:0;
-  left:0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f5f5f5;
-  max-height: var(--header-height);
-  width:100%;
-  z-index: 1;
-}
-
-footer {
-  position:fixed;
-  bottom:0;
-  left:0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f5f5f5;
-  width:100%;
-  max-height: var(--footer-height)
 }
 .view-wrapper {
   height:100%;

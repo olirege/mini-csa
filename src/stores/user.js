@@ -32,8 +32,19 @@ export const useUserStore = defineStore('user', {
          * @description
          * 1. Updates the user profile in the database
          */
-        async saveProfileChanges(){
-            await this.helper.setDoc("users", this.user.uid, this.userProfile);
+        async saveProfileChanges(changes){
+            const resp = await this.helper.setDoc("users", this.user.uid, changes);
+            //merge the changes with the current profile
+            if(resp){
+                this.userProfile = {
+                    ...this.userProfile,
+                    ...changes,
+                }
+                return true;
+            }else{
+                console.log("Error saving changes");
+                return false;
+            }
         },
         
         /**
@@ -45,20 +56,22 @@ export const useUserStore = defineStore('user', {
          */
         async removeCC(cc){
             const fb = useFirebaseStore();
-            this.helper.useRESTfulAPI(
+            const resp = await this.helper.useRESTfulAPI(
                 fb.api.removeCC,
                 "POST",
                 {
                     ...cc,
                     uid: this.user.uid,
                 }
-            ).then((response) => {
-                console.log(response);
-            }).catch((error) => {
-                console.log(error);
-            });
-        },
-
+            )
+            if(resp){
+                const index = this.userProfile.cc.indexOf(cc)
+                this.userProfile.cc.splice(index, 1);
+                return true;
+            }else{
+                return false
+            }
+        },   
     },
     getters: {
         /**

@@ -1,74 +1,88 @@
 <template>
-    <div class="page-wrapper">
-        <h2>Order {{id}} Summary</h2>
-        <div class="grid-content" v-if="oldCart && oldCart.oid == id">
-            <div class="header">Processed on:{{oldCart.closedOn.toDate()}}</div>
-            <div class="column">
-                <div class="row" v-for="item in oldCart.items" :key="item.iid">{{item.name}} {{item.qty}} x {{item.price}}$ = {{item.price * item.qty}}$</div>
+    <ThePage :id="id">
+        <template #content>
+            <div class="content">
+                <TheCard :hasImage="false" :hasExtras="false" :isHeightDynamic="true" class="w100 h100">
+                    <template #title>
+                        <h3 class="italic pd1">{{formatTimestamp(oldCart.closedOn)}}</h3>
+                        <span class="line"></span>
+                    </template>
+                    <template #body>
+                        <div class="col- w100 h75screen">
+                            <div class="row- w100 flex-start border-bottom">
+                                <h3 class="w100">Item</h3>
+                                <h3 class="w100">Quantity</h3>
+                                <h3 class="w100">Price</h3>
+                                <h3 class="w100">Total on Checkout</h3>
+                                <h3 class="w100">Total on Packing</h3>
+                            </div>
+                            <div class="row- w100" v-for="item in oldCart.items" :key="item.iid">
+                                <h4 class="w100">{{item.name}}</h4>
+                                <h4 class="w100">{{item.qty}}</h4>
+                                <h4 class="w100">{{formatNumber(item.price)}}</h4>
+                                <h4 class="w100">{{formatNumber(item.price * item.qty)}}</h4>
+                                <h4 class="w100">{{formatNumber(item.price * item.qty)}}</h4>
+                            </div>
+                            <span class="line"></span>
+                            <span class="row- w100">
+                                <div class="w100"></div>
+                                <div class="w100"></div>
+                                <div class="w100"></div>
+                                <div class="w100">Total {{formatNumber(oldCart.checkoutTotal)}}</div>
+                                <div class="w100">Total {{formatNumber(oldCart.scannedTotal)}}</div>   
+                            </span>   
+                        </div>
+                    </template>
+                </TheCard>
             </div>
-            <div class="'total'">Total {{oldCart.total}}$</div>
-        </div>
-        <div v-else>
-            <h2>no order</h2>
-        </div>
-    </div>
+        </template>
+    </ThePage>
 </template>
 <script>
 import { useCartStore } from '../stores/cart'
-import { useProductStore} from '../stores/products'
+import ThePage from '../components/common/ThePage.vue'
+import TheCard from '../components/common/TheCard.vue'
+import { useProductStore } from '../stores/products'
+import { useHelperStore } from '../stores/helpers'
 import { computed } from 'vue'
 export default ({
+    components: {
+        ThePage,
+        TheCard,
+    },
     props:[
         'id',
     ],
     setup(props) {
         const productStore = useProductStore()
+        const helperStore = useHelperStore()
         const products = productStore.products 
         const cartStore = useCartStore()
-        const oldCart = computed(() => cartStore.oldCart)
-        cartStore.getOlderCart(props.id)
+        const oldCart = computed(() => cartStore.getOlderCart(props.id))
         return {
             oldCart,
-            oldCartLoaded: cartStore.oldCartLoaded,
             products,
+            formatTimestamp: helperStore.timestampFormatter,
+            formatNumber: helperStore.formatNumberToCurrency,
         }
     },
 
 })
 </script>
 <style scoped>
-.page-wrapper {
-    display: flex;
+.content{
+    display:flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
+    width:100%;
     height: 100%;
 }
-.grid-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr 1fr;
-    grid-template-areas: 
-        "header header header header"
-        "item item item item"
-        "item item item item"
-        "item item item item"
-        "total total total total";
+.line{
     width: 100%;
-    height: 100%;
+    height: 1px;
+    background-color: var(--color-border);
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
-.header {
-    grid-area: header;
-    font-weight: bold;
-}
-.row {
-    grid-area: item;
-    padding-left: 1rem;
-}
-.total {
-    grid-area: total;
-    font-weight: bold;
-}
-
 </style>

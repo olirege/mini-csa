@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 export const useTextStore = defineStore("text", {
   state: () => ({
+    langs: ["en","fr"],
+    lang: "en",
     text: {
       login: {
         welcome: "Bienvenue!",
@@ -30,5 +32,20 @@ export const useTextStore = defineStore("text", {
     },
     // ...
   }),
-  getters: {},
+  getters: {
+  },
+  actions: {
+    /**
+     * 
+     * @description
+     * 1. Sets the language
+     * 2. Sets the language in the local storage
+     */
+    switchLanguage() {
+      this.lang = this.lang == "en" ? "fr" : "en";
+      localStorage.setItem("lang", this.lang);
+      console.log("lang", this.lang);
+    },
+  },
+
 });

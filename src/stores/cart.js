@@ -5,15 +5,65 @@ export const useCartStore = defineStore("cart", {
   state: () => ({
     helper: useHelperStore(), 
     productStore: useProductStore(),
-    cartHistory: [],
+    cartHistory: {},
     oldCart: {},
-    cartTimeStamps: null,
+    cartTimeStamps: {},
     cart: {},
     cartStatus: "",
     cid: null,
     carts: [],
     cartsDue: [],
+    dailyCartsSummaries: [],
+    weeklyCartsSummary: {},
+    ordersReadyForPickup: {},
     }),
+  getters: {
+    isItemInCart: (state) => (item) => {
+        return state.cart.filter((i) => i.iid == item.iid).length > 0;
+    },
+    getAmountCartsDueForNext7Days: (state) => {
+        let count = 0;
+        const length = Object.keys(state.cartsDue).length;
+        for(let i = 0; i < length; i++){
+            if(state.cartsDue[Object.keys(state.cartsDue)[i]]){
+                const nCartsDue =  state.cartsDue[Object.keys(state.cartsDue)[i]].length
+                count+=nCartsDue;
+            }
+        }
+        return count;
+    },
+    getAmountCartsDueToday: (state) => {
+        return Object.keys(state.carts).length;
+    },
+
+    isItemQtyOverQuota: (state) => (pid,iid) => {
+        const product = state.productStore.products[pid].items[iid];
+        const itemInCart = state.cart.filter((i) => i.iid == iid)[0];
+        const itemQty = itemInCart ? itemInCart.qty : 0;
+        return itemQty > product.quota;
+    },
+    isOrderCompleted: (state) => (oid) => {
+        return Object.keys(state.ordersReadyForPickup).includes(oid);
+    },
+    getAmountOrdersReadyForPickup: (state) => {
+        return Object.keys(state.ordersReadyForPickup).length;
+    },
+    returnIid: (state) => (bid) => {
+        const items = state.productStore.items;
+        for(let iid in items){
+            if(items[iid].bid == bid){
+                return iid;
+            }
+        }
+    },
+    isCartDisabled: (state) => {
+        return state.cartStatus == "disabled";
+    },
+    isCartActive: (state) => {
+        return state.cartStatus == "active-with-items" || state.cartStatus == "active-no-items";
+    },
+
+  },
   actions: {
     /**
      * 
@@ -31,18 +81,22 @@ export const useCartStore = defineStore("cart", {
     async addToCart(pid,iid){
         let p = this.cart.find(p => p.iid === iid);
         if (p){
-            p.qty++;
-            this.productStore.updateItemStock(pid,iid, 1);
+            if(!this.isItemQtyOverQuota(pid,iid)){
+                p.qty++;
+                this.productStore.incrementItemFields(pid,iid, ["stock", "incart"], [-1, 1]);
+            }
         } else {
             if(this.cartStatus != "disabled"){
                 this.cart.push({
                     pid: pid,
                     iid: iid,
-                    name:this.productStore.products[pid].items[iid].name,
-                    price:this.productStore.products[pid].items[iid].price,
+                    bid: this.productStore.products[pid].items[iid].bid ? this.productStore.products[pid].items[iid].bid: null,
+                    name: this.productStore.products[pid].items[iid].name,
+                    price: this.productStore.products[pid].items[iid].price,
                     qty: 1,
                     });
-                this.productStore.updateItemStock(pid,iid, 1);
+                // this.productStore.updateItemStock(pid,iid, 1);
+                this.productStore.incrementItemFields(pid,iid, ["stock", "incart"], [-1, 1]);
                 if(this.cartStatus == "active-no-items"){
                     this.cartStatus = "active-with-items";
                 }
@@ -142,13 +196,7 @@ export const useCartStore = defineStore("cart", {
      * 1. loads the old orders of the user
      */
     async loadCartHistory() {
-        this.helper.getDocSubCollectionWithLimit("oldcarts", this.cid, "orders", 10).then((querySnapshot) => {
-            querySnapshot.forEach((doc) => {
-                this.cartHistory.push(doc);
-            });
-        }).catch((error) => {
-            console.log("Error getting documents: ", error);
-        });
+        this.cartHistory = await this.helper.getDocSubCollectionWithLimit("oldcarts", this.cid, "orders", 10)
     },
 
     /**
@@ -159,6 +207,18 @@ export const useCartStore = defineStore("cart", {
         this.helper.setDoc("carts", this.cid, {items: this.cart, cartStatus: this.cartStatus});
     },
 
+    async getOrdersReadyForPickup(){
+        this.ordersReadyForPickup = await this.helper.getCollectionGroupWhere("orders", "cartStatus", "==", "ready-for-pickup");
+    },
+    async updateOrder(cart,oid){
+        this.helper.setDocInSubcollection("oldcarts", cart.parent, "orders", oid, 
+        {
+            cartStatus: cart.data.cartStatus,
+            scannedItems: cart.data.scannedItems,
+            scannedTotal: cart.data.scannedTotal,
+            scannedAt: this.helper.dateFactory(true),
+        });
+    },
     /**
     // async checkout() {
     //     const fb = useFirebaseStore();
@@ -206,11 +266,12 @@ export const useCartStore = defineStore("cart", {
      * 1. query orders collection group for the order
      * 2. if the order exists, assign it to state 
      */
-    async getOlderCart(oid){
-        this.helper.getCollectionGroupWhere("orders", "oid", "==", oid).then(
-            (doc) => {
-                this.oldCart = doc['oid']
-        })
+    getOlderCart(oid){
+        // this.helper.getCollectionGroupWhere("orders", "oid", "==", oid).then(
+        //     (doc) => {
+        //         this.oldCart = doc['oid']
+        // })
+        return this.cartHistory[oid]
     },
 
     /**
@@ -219,11 +280,10 @@ export const useCartStore = defineStore("cart", {
      * 2. If it doesn't exist, get carts with items due today 
      */
     async getFullCartsDueToday() {
-        const today = this.helper.dateFactory(0,0)
-        if(this.carts.length > 0){
+        if(Object.keys(this.carts).length > 0){
             this.carts = {};
         }
-        this.helper.getCollectionWhere2XChain("carts",["cartStatus","closesOn"],["==","=="],["active-with-items",today],10)
+        this.helper.getCollectionGroupWhere("orders","cartStatus","==","checked-out",10)
         .then((docs) => {
             this.carts = docs;
         }).catch((error) => {
@@ -250,6 +310,47 @@ export const useCartStore = defineStore("cart", {
             console.log("Error getting documents: ", error);
         });
     },
+    async summarizeItemsQtyAndPriceOfCartsOnADate(){
+        const dates = Object.keys(this.cartsDue)
+        const length = dates.length
+        if(this.dailyCartsSummaries.length > 0){
+            this.dailyCartsSummaries = [];
+        }
+        for( let i = 0; i < length; i++){
+            let items = {}
+            let total = 0
+            await this.cartsDue[dates[i]].forEach(cart => {
+                cart.data.items.forEach(item => {
+                    if (items[item.name]){
+                        items[item.name].qty += item.qty
+                        items[item.name].price = item.price
+                        items[item.name].total = item.qty * item.price
+                    } else {
+                        items[item.name] = {qty:item.qty, price:item.price, total:item.qty * item.price}
+                    }
+                    total += items[item.name].total
+                })
+            })
+            this.dailyCartsSummaries.push({items:items, total:total})
+        }
+    },
+    summarizeItemsQtyAndTotalOfCartsOfWeek(){
+        const total = this.dailyCartsSummaries.reduce((acc, cur) => {
+            return acc + cur.total
+        }, 0)
+        this.dailyCartsSummaries.forEach(cart => {
+            for(let item in cart.items){
+                if (this.weeklyCartsSummary[item]){
+                    this.weeklyCartsSummary[item].qty += cart.items[item].qty
+                    this.weeklyCartsSummary[item].total += cart.items[item].total
+                } else {
+                    this.weeklyCartsSummary[item] = {qty:cart.items[item].qty, total:cart.items[item].total}
+                }
+            }
+        })
+        this.weeklyCartsSummary.total = total
+    },
+      
     /**
      * 
      * @returns - object with the upcoming 7 days
@@ -281,6 +382,25 @@ export const useCartStore = defineStore("cart", {
             }
         })
         return schedule
-    } 
+    },
+    /**
+     * @description
+     * 1. Check if a specific item is in the cart
+     * 2. If it is, return true
+     * 3. If it isn't, return false
+     * 
+     * @param {*} item
+     * @returns - boolean
+     *  */ 
+    itemInCart(iid){
+        if(this.cart.length > 0){
+            for (let i = 0; i < this.cart.length; i++) {
+                if(this.cart[i].iid === iid){
+                    return true
+                }
+            }
+        }
+        return false
+    }
   }
 });

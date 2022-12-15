@@ -44,12 +44,12 @@ exports.scheduledCloseEmptyCartsDueToday = functions.pubsub.schedule("0 0 * * *"
     .onRun((context) => {
         const newCart = {
             items: [],
+            scannedItems: [],
             cartStatus: "disabled",
             createdAt: new Date(),
             opensOn: in4daysAtMidnight,
             closesOn: in7daysAtMidnight,
         };
-        functions.logger.debug("ts", {ts: [todayMidnight, timestampFromDate], ts2: [tomorrowMidnight, timestampFromTomorrow]});
         const emptyCartsSheduledForTodayCheckoutDocRef = db.collection("carts")
             .where("cartStatus", "==", "active-no-items")
             .where("closesOn", ">=", timestampFromDate)
@@ -92,23 +92,27 @@ exports.scheduledCartCheckouts = functions.pubsub.schedule("0 0 * * *")
             .where("cartStatus", "==", "active-with-items")
             .where("closesOn", ">=", timestampFromDate)
             .where("closesOn", "<", timestampFromTomorrow);
+        functions.logger.debug("Scheduled cart checkouts", {timestampFromDate, timestampFromTomorrow});
         return db.runTransaction((transaction) => {
             return transaction.get(cartsSheduledForTodayCheckoutDocRef).then((querySnapshot) => {
                 querySnapshot.forEach((cart) => {
                     const olderCart = cart.data();
+                    functions.logger.debug("Scheduled cart checkout", {docId: cart.id});
                     const ORDER_ID = utils.createOid();
                     const AMOUNT = utils.cartTotal(olderCart.items);
                     transaction.update(cart.ref, newCart);
                     const oldcartOrdersSubcollectionRef = db.collection("oldcarts").doc(cart.id).collection("orders");
                     const order = {
-                        cartStatus: "closed",
-                        total: AMOUNT,
+                        cartStatus: "checked-out",
+                        checkoutTotal: AMOUNT,
                         createdAt: olderCart.createdAt,
                         openedOn: olderCart.opensOn,
                         closedOn: olderCart.closesOn,
                         items: olderCart.items,
+                        scannedItems: [],
                     };
                     transaction.set(oldcartOrdersSubcollectionRef.doc(ORDER_ID), order);
+                    functions.logger.debug("Scheduled cart checkout", {docId: cart.id, orderId: ORDER_ID});
                     const TIMESTAMP = utils.timestampToYYYYMMDDHHMMSS();
                     const SHA1HASH = utils.createCHARGESHA1(TIMESTAMP, MERCHANT_ID, ORDER_ID, AMOUNT, CURRENCY, PAYER_REF, SS); // could be PMT_REF instead of PAYER_REF
                     const chargeForm = xmls.chargeForm(TIMESTAMP, MERCHANT_ID, ACCOUNT, ORDER_ID, AMOUNT, CURRENCY, PMT_REF, PAYER_REF, SHA1HASH);

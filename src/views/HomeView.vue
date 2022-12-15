@@ -4,23 +4,27 @@ import { useTextStore } from "../stores/text";
 import { useFirebaseStore } from "../stores/firebase";
 import { useUserStore } from "../stores/user";
 import { ref } from "vue";
-import axios from "axios";
 export default ({
   setup() {
     const textStore = useTextStore();
     const router = useRouter();
-    const text = textStore.text;
     const fb = useFirebaseStore();
     const user = useUserStore();
+    const text = textStore.text;
     const email = ref("");
     const password = ref("");
     const showSubcribe = ref(false)
    
+    function dev(){
+      email.value = 'test@domain.com' 
+      password.value = 'Test1234'
+      login()
+    }
     function login() {
       fb.signInUser(email.value, password.value)
         .then(() => {
           if(user.isLogged){
-             router.push('store')
+             router.push('Store')
              fb.loginError = null
              user.getProfile()
             }
@@ -33,42 +37,6 @@ export default ({
       router.push("subscribe")
     }
 
-    function initHpp() {
-      if(document.querySelector("#iframeId")){
-        document.querySelector("#iframeId").remove();
-      }
-      const newIFrame = document.createElement("iframe")
-      newIFrame.id = "iframeId"
-      document.querySelector(".router-wrapper").append(newIFrame);
-      axios({
-        method:'get',
-        url: fb.api.getRealexHpp
-      }).then((resp) => {
-        showSubcribe.value = true
-        RealexHpp.setHppUrl("https://pay.sandbox.realexpayments.com/pay");
-        RealexHpp.embedded.init(
-        "autoload", 
-        "iframeId",
-        (awnser, close) => {
-          handleResponse(awnser, close)
-        },
-        resp.data)
-      })
-    }
-    function handleResponse(awnser, close){
-      axios({
-        method:'post',
-        url:fb.api.RealexHppEndpoint,
-        data: {
-          ...awnser
-        },
-      }).then((resp) =>{
-        console.log(resp)
-      }).catch((err) =>{
-        console.log(err.error)
-        initHpp();
-      })
-    }
     return {
       text,
       login,
@@ -78,6 +46,7 @@ export default ({
       user,
       fb,
       showSubcribe,
+      dev,
     };
   },
 });
@@ -112,6 +81,7 @@ export default ({
                 <button class="signup-button" @click="signUp">{{
                 text.login.signup
                 }}</button>
+                <button @click="dev">Dev</button>
             </span>
         </div>
         <h5 class="error-message" v-if="fb.loginError">{{fb.loginError}}</h5>

@@ -64,6 +64,7 @@ export const useFirebaseStore = defineStore("firebase", {
         const user = userCredential.user;
         userStore.setUser(user);
         cartStore.loadCart(user.uid);
+        cartStore.loadCartHistory()
 
         // ...
       })
