@@ -67,7 +67,7 @@ export default ({
         formatNumber: helperStore.formatNumberToCurrency,
         formatString: helperStore.formatStringToSubstring,
         userStore,
-        globalLoading: helperStore.globalLoading
+        globalLoading: helperStore.globalLoading,
         }
     },
 })

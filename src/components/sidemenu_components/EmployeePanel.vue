@@ -13,7 +13,15 @@
                         <h5>Finished Products</h5>
                         <i class="bi bi-chevron-down"></i>
                     </RouterLink>
-                    <RouterLink :to="{name:'Orders'}" class="panel-item">
+                    <RouterLink class="panel-item" :to="{name:'Ingredient List'}">
+                        <h5>Ingredients</h5>
+                        <i class="bi bi-chevron-down"></i>
+                    </RouterLink>
+                    <RouterLink class="panel-item" :to="{name:'Recipes'}">
+                        <h5>Recipes</h5>
+                        <i class="bi bi-chevron-down"></i>
+                    </RouterLink>
+                    <RouterLink class="panel-item" :to="{name:'Orders'}">
                         <h5>Today's Orders</h5>
                         <i class="bi bi-chevron-down"></i>
                     </RouterLink>

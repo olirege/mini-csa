@@ -6,12 +6,14 @@ import ProductView from "../views/ProductView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import EmployeePanelView from "../views/employee/EmployeePanelView.vue";
 import CRUDProductView from "../views/employee/CRUDProductView.vue";
-import FinishedProductsView from "../views/employee/FinishedProductsView.vue";
+import FinishedProductsView from "../views/employee/FinishedProductsViewV2.vue";
 import OrdersView from "../views/employee/OrdersView.vue";
-import ScheduleView from "../views/employee/ScheduleView.vue";
+import ScheduleView from "../views/employee/ScheduleViewV2.vue";
 import SuppliersView from "../views/employee/SuppliersView.vue";
 import ReviewsView from "../views/employee/ReviewsView.vue";
 import OrderDetailView from "../views/OrderDetailView.vue";
+import IngredientsView from "../views/employee/IngredientsView.vue"
+import RecipesView from '../views/employee/RecipesView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -90,7 +92,18 @@ const router = createRouter({
       component: SuppliersView,
       // meta: { requiresAuth: true },
     },
-    
+    {
+      name: "Ingredient List",
+      path: "/employeepanel/ingredients",
+      component: IngredientsView,
+      // meta: { requiresAuth: true },
+    },
+    {
+      name: "Recipes",
+      path: "/employeepanel/recipes",
+      component: RecipesView,
+      // meta: { requiresAuth: true },
+    },
     {
       path: "/:pathMatch(.*)*",
       redirect: "/",

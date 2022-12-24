@@ -62,10 +62,32 @@ exports.onWriteIngredientAdjustToGram = functions.firestore
     .onWrite((change, context)=>{
         const ingredientRef = db.doc(`ingredients/${context.params.ingredientId}`);
         const ingredient = change.after.data();
-        functions.logger.debug("converting ingredient weight in to grams");
-        const {unit, weight} = ingredient;
-        const converted = utils.convertUnitIntoGrams(unit, weight);
-        return ingredientRef.set({
-            convertToGrams: converted,
-        });
+        functions.logger.debug("converting ingredient weight in to grams", ingredient);
+        // const unit = ingredient.unit;
+        const weight = ingredient.weight;
+        const cost = ingredient.cost;
+        // const converted = utils.convertUnitIntoGrams(unit, weight);
+        // functions.logger.debug("calculating cost per gram", unit, weight, cost, converted);
+        const ratio = utils.costPerGram(cost, weight);
+
+        ingredientRef.set({
+            // convertedToGrams: converted,
+            costPerUnit: ratio,
+        }, {
+            merge: true});
+    });
+exports.onCreateItemCreateRecipe = functions.firestore
+    .document("items/{itemId}")
+    .onCreate((snap, context) => {
+        const item = snap.data();
+        const iid = context.params.itemId;
+        functions.logger.debug("creating recipe from item", item);
+        const recipe = {
+            name: "",
+            ingredients: [],
+            createdAt: new Date(),
+            drafts: [],
+        };
+        const recipeRef = db.doc(`recipes/${iid}`);
+        return recipeRef.set(recipe);
     });

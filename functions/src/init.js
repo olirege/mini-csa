@@ -17,16 +17,6 @@ const globals = {
     in4daysAtMidnight: dateFactory(4, 5),
     in7daysAtMidnight: dateFactory(7, 5),
     timezone: "Canada/Eastern",
-    conversionFactor: {
-      "milligrams": 0.001,
-      "grams": 1,
-      "kilograms": 1000,
-      "ounces": 28.3495,
-      "pounds": 453.592,
-      "milliliters": 1,
-      "liters": 1000,
-      "cubic meters": 1000000,
-      },
 };
 
 

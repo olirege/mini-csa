@@ -60,17 +60,11 @@ export default ({
 })
 </script>
 <style scoped>
-.cart{
-    display:flex;
-    width: 100%;
-    flex-direction: column;
-    gap:0.3rem;
-}
-.cart img{
+img{
     border-radius: 5px;
     max-height: 100px;
 }
-.cart .qty {
+.qty {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;

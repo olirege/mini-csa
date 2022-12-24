@@ -50,11 +50,18 @@ export const useCartStore = defineStore("cart", {
     },
     returnIid: (state) => (bid) => {
         const items = state.productStore.items;
+        let match = false;
         for(let iid in items){
             if(items[iid].bid == bid){
-                return iid;
+                match = iid;
             }
         }
+        if(!match){
+            return false;
+        }else{
+            return match;
+        }
+        
     },
     isCartDisabled: (state) => {
         return state.cartStatus == "disabled";
@@ -210,8 +217,8 @@ export const useCartStore = defineStore("cart", {
     async getOrdersReadyForPickup(){
         this.ordersReadyForPickup = await this.helper.getCollectionGroupWhere("orders", "cartStatus", "==", "ready-for-pickup");
     },
-    async updateOrder(cart,oid){
-        this.helper.setDocInSubcollection("oldcarts", cart.parent, "orders", oid, 
+    async updateOrder(cart){
+        this.helper.setDocInSubcollection("oldcarts", cart.parent, "orders", cart.oid, 
         {
             cartStatus: cart.data.cartStatus,
             scannedItems: cart.data.scannedItems,
@@ -283,7 +290,7 @@ export const useCartStore = defineStore("cart", {
         if(Object.keys(this.carts).length > 0){
             this.carts = {};
         }
-        this.helper.getCollectionGroupWhere("orders","cartStatus","==","checked-out",10)
+        this.helper.getCollectionGroupWhere("orders","cartStatus","==","checked-out",100)
         .then((docs) => {
             this.carts = docs;
         }).catch((error) => {

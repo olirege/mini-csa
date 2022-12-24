@@ -34,6 +34,8 @@ import { useProductStore } from '../../stores/products'
 import { useCartStore } from '../../stores/cart'
 import { useReviewsStore } from '../../stores/reviews'
 import { useHelperStore } from '../../stores/helpers'
+import { useIngredientStore } from '../../stores/ingredients'
+import { useRecipeStore } from '../../stores/recipes'
 import { useRouter } from 'vue-router'
 import TheCard from '../../components/common/TheCard.vue'
 import ThePage from '../../components/common/ThePage.vue'
@@ -49,6 +51,10 @@ export default ({
         const productsStore = useProductStore()
         const cartStore = useCartStore()
         const helperStore = useHelperStore()
+        const ingredientStore = useIngredientStore()
+        ingredientStore.loadIngredients()
+        const recipeStore = useRecipeStore()
+        recipeStore.loadRecipes()
         const colors = helperStore.colors
         cartStore.getFullCartsDueToday()
         cartStore.getOrdersReadyForPickup()
@@ -102,6 +108,18 @@ export default ({
                 ],
                 bgColor: colors[5].dark
             },
+            {name:'Ingredient List', label:'Ingredients', icon: 'bi bi-egg-fried', data:
+                [
+                    {num: computed(() => ingredientStore.getAmountIngredients), label: 'Ingredients'},
+                ],
+                bgColor: colors[6].dark
+            },
+            {name:'Recipes', label:'Recipes', icon: 'bi bi-card-list', data:
+                [
+                    {num: computed(() => recipeStore.getAmountRecipes), label: 'Recipes'},
+                ],
+                bgColor: colors[1].dark
+            },
         ]
         return {
             routes,
@@ -116,7 +134,8 @@ export default ({
     grid-template-areas: "card1 card1" 
                          "card2 card3"
                          "card4 card4" 
-                         "card5 card6";
+                         "card5 card6"
+                         "card7 card8";
     grid-template-rows: 1fr 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr;
     /* grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); */
@@ -144,6 +163,13 @@ export default ({
 #Suppliers{
     grid-area: card6;
 }
+#Ingredients{
+    grid-area: card7;
+}
+#Recipes{
+    grid-area: card8;
+}
+
 .custom-card-wrapper:hover{
     cursor: pointer;
     scale:1.005;

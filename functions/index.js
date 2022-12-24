@@ -10,6 +10,7 @@ exports.onUserCreationCreateCart = funcs.onUserCreationCreateCart;
 exports.onScheduledCheckoutAdjustItemToPickup = funcs.onScheduledCheckoutAdjustItemToPickup;
 exports.onOrderScannedItemUpdate = funcs.onOrderScannedItemUpdate;
 exports.onWriteIngredientAdjustToGram = funcs.onWriteIngredientAdjustToGram;
+exports.onCreateItemCreateRecipe = funcs.onCreateItemCreateRecipe;
 exports.api = api.api;
 exports.createUser = api.createUser;
 

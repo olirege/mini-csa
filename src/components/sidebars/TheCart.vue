@@ -31,9 +31,8 @@
 <script>
 import { useCartStore } from '../../stores/cart'
 import { useUserStore } from '../../stores/user'
-import { usePaymentStore } from '../../stores/payment'
 import { useHelperStore } from '../../stores/helpers'
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import CartCard from '../cart_components/CartCard.vue'
 import Spinner from '../common/Spinner.vue'
 import Countdown from '../common/CountdownComponent.vue'
@@ -50,10 +49,6 @@ export default {
         const helperStore = useHelperStore()
         const cart = computed(() => cartStore.cart)
         const total = computed(() => cartStore.cartTotal())
-        // const opensOn = computed(() => { 
-        // if(timestamps.value){
-        //     return timestamps.opensOn.toDate()
-        // }})
         return {
             cart,
             total,
@@ -61,7 +56,6 @@ export default {
             isCartActive: computed(()=>cartStore.isCartActive),
             isCartDisabled: computed(()=>cartStore.isCartDisabled),
             timestamps,
-            // opensOn,
             formatNumberToCurrency: helperStore.formatNumberToCurrency,
             formatTimestamp: helperStore.timestampFormatter,
             formatTimestamp: helperStore.timestampFormatter,
@@ -107,5 +101,11 @@ export default {
 }
 .header> h3 {
     font-size: 0.7rem;
+}
+.cart{
+    display:flex;
+    width: 100%;
+    flex-direction: column;
+    gap:0.3rem;
 }
 </style>

@@ -21,6 +21,7 @@ import {
   increment,
   updateDoc,
   Timestamp,
+  arrayUnion,
 } from "firebase/firestore";
 import { useFirebaseStore } from "./firebase";
 import { usePaymentStore } from "./payment";
@@ -102,6 +103,16 @@ export const useHelperStore = defineStore("helpers", {
      * //   "age": 21
      * // }
      * */
+    async getDocs(_collection) {
+      //@ts-ignore
+      const querySnapshot = await getDocs(collection(this.fb.db, _collection));
+      const docs = {};
+      querySnapshot.forEach((doc) => {
+        docs[doc.id] = doc.data();
+      });
+      return docs;
+    },
+
     async getDocFromCache(collection, id) {
       //@ts-ignore
       const docRef = doc(this.fb.db, collection, id);
@@ -391,7 +402,27 @@ export const useHelperStore = defineStore("helpers", {
     async setDocInSubcollection(collection, id, subcollection, subid, data) {
       // @ts-ignore
       const docRef = doc(this.fb.db, collection, id, subcollection, subid);
-      await setDoc(docRef, data, { merge: true })
+      try{
+        await setDoc(docRef, data, { merge: true })
+        return true
+      }catch(e){
+        console.log('Error during setting document:',  e)
+        return false
+      }
+    },
+
+    async updateArrayInDoc(collection, id, field, data) {
+      try{
+        // @ts-ignore
+        const docRef = doc(this.fb.db, collection, id);
+        await updateDoc(docRef, {
+          [field]: arrayUnion(data)
+        })
+        return true
+      }catch(e){
+        console.log('Error during updating document:',  e)
+        return false
+      }
     },
     /**
      *
@@ -488,15 +519,14 @@ export const useHelperStore = defineStore("helpers", {
      *
      */
     async deleteDocInSubcollection(collection, id, subcollection, subid) {
-      // @ts-ignore
-      await deleteDoc(doc(this.fb.db, collection, id, subcollection, subid))
-        .then(() => {
-          return true;
-        })
-        .catch((error) => {
-          console.error("Error removing document: ", error);
-          return false;
-        });
+      try{
+        // @ts-ignore
+        await deleteDoc(doc(this.fb.db, collection, id, subcollection, subid))
+        return true
+      }catch(e){
+        console.log('Error during deleting document:',  e)
+        return false
+      }
     },
     /**
      *

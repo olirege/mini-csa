@@ -165,7 +165,7 @@ export default ({
                         hasError.value = true
                         errorMessage.value = "Value must be less than " + props.max + " characters"
                     }
-                    if(/[^a-zA-Z0-9]/g.test(value)){
+                    if(/[^a-zA-Z0-9\s]/g.test(value)){
                         hasError.value = true
                         errorMessage.value = "Value must be alphanumeric"
                     }
@@ -249,7 +249,6 @@ export default ({
                 }
                 if(props.sanitize){
                     const data =  sanitize(e.target.value)
-                    console.log(hasError.value)
                     if(!hasError.value){
                         ctx.emit('update:output',data)
                     }

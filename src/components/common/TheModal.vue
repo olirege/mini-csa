@@ -1,7 +1,7 @@
 <template>
     <div class="background" :class="{nobackdrop: noBackdrop}">
         <div class="modal-wrapper" @click.self="$emit('close-modal')">
-            <div class="modal" :style="{height: modalHeight, width: modalWidth }">
+            <div class="modal" :style="{height: modalHeight, width: modalWidth }" :class="{border: noBackdrop}">
                 <div class="modal-header" :style="{
                     backgroundColor: color,
                     }"
@@ -93,6 +93,9 @@ export default ({
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+}
+.modal.border{
+    border: 1px solid var(--vt-c-black)
 }
 .modal-header {
     display: flex;

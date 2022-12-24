@@ -16,7 +16,7 @@ import { computed } from 'vue'
 export default ({
     props:{
         text: {
-            type: String,
+            types: [String, Number],
             required: true
         },
         code: {

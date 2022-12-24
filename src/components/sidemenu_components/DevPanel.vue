@@ -12,18 +12,56 @@
                 <h5>Remove Fake Items</h5>
                 <i class="bi bi-chevron-down"></i>
             </span>
+            <span class="panel-item" @click="AddFakeIngredient">
+                <h5>Add Fake Ingredient</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
+            <span class="panel-item" @click="RemoveFakeIngredient">
+                <h5>Remove Fake Ingredient</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
+            <span class="panel-item" @click="AddFakeOrder">
+                <h5>Add Fake Order</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
+            <span class="panel-item" @click="AddFakeActiveCart">
+                <h5>Add Fake Cart</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
+            <span class="panel-item" @click="RemoveFakeCarts">
+                <h5>Remove Fake Cart</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
         </div>
     </div>
 </template>
 <script>
 import { useHelperStore } from '../../stores/helpers';
 import { useProductStore } from '../../stores/products';
+import { useIngredientStore } from '../../stores/ingredients'
+import densityTable from '../../stores/utils/density.json'
 export default ({
     setup() {
         const helperStore = useHelperStore()
         const productStore = useProductStore()
+        const items = productStore.items
+        const ingredientStore = useIngredientStore()
         const pids = Object.keys(productStore.products)
         const imgs = ['7jf4eJVN2rkU6A7DZpCr','C8jtNGXtP6wA41ZvcC1o','IisV05Tkt9CV55USYMcp','M9tSQR3TlVT2Y50cTSax','N3wxBsughTD938q7wWOq','rQdseXI9dJQUs6uxhoMl']
+        const uid = [
+                    'dLdcms0fwLZGpx5KH1XHeoNuTq33',
+                    'XBeDNNGGv6SgqDwDco4hxJ8cFWl2',
+                    ]
+            
+        const units = [
+            "milligrams",
+            "grams",
+            "kilograms",
+            "ounces",
+            "pounds",
+            "milliliters",
+            "liters",
+            ]
         async function AddFakeItems() {
             let randomPid = pids[Math.floor(Math.random()*pids.length)]
             let randomImage = imgs[Math.floor(Math.random()*imgs.length)]
@@ -73,9 +111,135 @@ export default ({
                 })
             })
         }
+        function AddFakeIngredient() {
+            let randomWeight = Math.round(Math.random() * 100)
+            let randomCost = Math.round(Math.random() * 100)
+            let randomUnit = units[Math.floor(Math.random()*units.length)]
+            let randomTypeKey = Object.keys(densityTable)[Math.floor(Math.random()*Object.keys(densityTable).length)]
+            let randomDensity = densityTable[randomTypeKey]
+            let randomQty = Math.floor(Math.random() * 100)
+            let ingredient = {
+                name: "Test Ingredient",
+                brand: "Test Brand",
+                weight: randomWeight,
+                cost: randomCost,
+                unit: randomUnit,
+                qty: randomQty,
+                type: randomTypeKey,
+                density: randomDensity,
+            }
+            ingredientStore.createIngredient(ingredient)
+        }
+        function RemoveFakeIngredient() {
+            helperStore.getCollectionWhere('ingredients', 'brand', '==', 'Test Brand').then((ingredients) => {
+                Object.keys(ingredients).forEach((ingid) => {
+                    helperStore.deleteDoc('ingredients', ingid)
+                    ingredientStore.ingredients[ingid] = null
+                })
+            })
+        }
+        function AddFakeOrder(){
+            let oid = Math.random().toString(36).substring(2, 15).toUpperCase();
+            let cartStatus = 'checked-out'
+            let randomUser = uid[Math.floor(Math.random()*uid.length)]
+            // closes in a random amount of time with 7 days from now
+            let closedOn = new Date()
+            closedOn.setDate(closedOn.getDate() + Math.floor(Math.random() * 7))
+            let createdAt = new Date()
+            let openedOn = new Date()
+            let randomItems = []
+            let randomAmount = Math.floor(Math.random() * 10)
+            let cartItems = []
+            let checkoutTotal = 0
+            for(let i = 0; i < randomAmount; i++){
+                let randomItem = Object.keys(productStore.items)[Math.floor(Math.random()*Object.keys(productStore.items).length)]
+                randomItems.push(randomItem)
+            }
+            randomItems.forEach(
+                (item) => {
+                    cartItems.push({
+                        bid: items[item].bid,
+                        iid: item,
+                        name: productStore.items[item].name,
+                        pid: items[item].pid,
+                        price: productStore.items[item].price,
+                        qty: Math.floor(Math.random() + 1 * 10),
+                    })
+                }
+            )
+            for(let i = 0; i < cartItems.length; i++){
+                checkoutTotal += cartItems[i].price * cartItems[i].qty
+            }
+            const order = {
+                cartStatus,
+                items:cartItems,
+                closedOn,
+                createdAt,
+                openedOn,
+                scannedItems: [],
+                scannedTotal: 0,
+                checkoutTotal: checkoutTotal
+            }
+            helperStore.setDocInSubcollection('oldcarts',randomUser,'orders',oid,order)
+        }
+        function AddFakeActiveCart(){
+            let randomCid = 'fake_' + Math.random().toString(36).substring(2, 15).toUpperCase();
+            const cartStatus = 'active-with-items'
+            let closesOn = new Date()
+            closesOn.setDate(closesOn.getDate() + Math.floor(Math.random() * 7))
+            let createdAt = new Date()
+            let openedOn = new Date()
+            let cartItems = []
+            let randomItems = []
+            let randomAmount = Math.floor(Math.random() * 10)
+            if(randomAmount === 0) randomAmount = 1
+
+            for(let i = 0; i < randomAmount; i++){
+                let randomItem = Object.keys(productStore.items)[Math.floor(Math.random()*Object.keys(productStore.items).length)]
+                randomItems.push(randomItem)
+            }
+            randomItems.forEach(
+                (item) => {
+                    let qty = Math.floor(Math.random() * 10)
+                    if(qty === 0) qty = 1
+                    cartItems.push({
+                        bid: items[item].bid,
+                        iid: item,
+                        name: productStore.items[item].name,
+                        pid: items[item].pid,
+                        price: productStore.items[item].price,
+                        qty: qty
+                    })
+                }
+            )
+            const cart = {
+                cartStatus,
+                items:cartItems,
+                closesOn,
+                createdAt,
+                openedOn,
+                scannedItems: [],
+            }
+            helperStore.setDoc('carts',randomCid,cart)
+        }
+        function RemoveFakeCarts(){
+            helperStore.getDocs('carts').then((carts) => {
+                Object.keys(carts).forEach((cid) => {
+                    if(cid.includes('fake_')){
+                        helperStore.deleteDoc('carts',cid)
+                    }
+                })
+            })
+                    
+        }
         return {
             AddFakeItems,
             RemoveFakeItems,
+            AddFakeIngredient,
+            RemoveFakeIngredient,
+            AddFakeOrder,
+            AddFakeActiveCart,
+            RemoveFakeCarts,
         }
     },
 })

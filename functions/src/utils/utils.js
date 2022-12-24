@@ -1,5 +1,5 @@
 const CryptoJS = require("crypto-js");
-const {db, globals} = require("../init.js");
+const db = require("../init.js").db;
 const axios = require("axios");
 const DOMParser = require("xmldom").DOMParser;
 const functions = require("firebase-functions");
@@ -113,9 +113,55 @@ exports.sendEmailToCustomer = function(cid, message) {
         }
     });
 };
-exports.convertUnitIntoGrams = function(unit, weight) {
-    if (!globals.conversionFactor.prototype.hasOwnProperty.call(globals.conversionFactor, unit)) {
-        throw new Error(`Unknown unit: ${unit}`);
-    }
-    return weight * globals.conversionFactor[unit];
+// exports.convertUnitIntoGrams = function(unit, weight) {
+//     // const conversionFactors = {
+//     //     volumes: {
+//     //       "milliliters": 1,
+//     //       "liters": 1000,
+//     //       "teaspoons": 4.92892,
+//     //       "tablespoons": 14.7868,
+//     //       "cups": 236.588,
+//     //       "pints": 473.176,
+//     //       "quarts": 946.353,
+//     //       "gallons": 3785.41
+//     //     },
+//     //     weights: {
+//     //       "ounces": 29.5735,
+//     //       "pounds": 454,
+//     //       "grams": 1,
+//     //       "kilograms": 1000
+//     //     }
+//     //   };
+//     // const densities = {
+//     //     'water': 1,
+//     //     'oil': 0.9,
+//     //     'flour': 1.5,
+//     //     'sugar': 1.6,
+//     //     'salt': 2.16,
+//     //     'baking powder': 0.5,
+//     //     'baking soda': 0.5,
+//     //     'yeast': 0.5,
+//     //     'cinnamon': 0.6,
+//     //     'nutmeg': 0.6,
+//     //     'cloves': 0.6,
+//     //     'honey': 1.4,
+//     //     'molasses': 1.4,
+//     //     'corn syrup': 1.4,
+//     //     'cornstarch': 1.6,
+//     //     'milk': 1.03,
+//     //     'cream': 0.994,
+//     //     'buttermilk': 1.03,
+//     //     'sour cream': 0.996
+//     // };
+//     if (!Object.keys(conversionFactors.volumes).includes(unit) && !Object.keys(conversionFactors.weights).includes(unit)) {
+//         throw new Error(`Unknown unit: ${unit}`);
+//     }
+//     // const density = densities[substance]
+//     // const g = ml * density;
+//     return weight * conversionFactors[unit];
+// };
+exports.costPerGram = function(a, b) {
+    const ratio = a / b;
+    const rounded = ratio.toFixed(2);
+    return parseFloat(rounded);
 };
