@@ -1,18 +1,18 @@
 <template>
     <div class="col- h100 w50 border-with-radius">
         <span class="row- center-start border-bottom pd05 gap05 border-radius-top bg-blu-lgt">
-            <h3>{{ selectedDate.key }} Summary</h3>
+            <h3>Weekly Summary</h3>
         </span>
         <div class='h100 oflow-y-auto'>
             <div class="col- oflow-y-auto pd05">
-                <div class="col- pd05">
-                    <span class="row- gap05">
-                        <h5>{{ selectedDate.key }}</h5>
-                    </span>
-                </div>
-                <table v-if="selectedDate.key" class="h100">
-                    <thead>
+            <table>
+                <thead>
                         <tr>
+                            <th>
+                                <div>
+                                    #
+                                </div>
+                            </th>
                             <th>
                                 <div>
                                     Image
@@ -30,11 +30,6 @@
                             </th>
                             <th>
                                 <div>
-                                    Price
-                                </div>
-                            </th>
-                            <th>
-                                <div>
                                     Quantity
                                 </div>
                             </th>
@@ -46,18 +41,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(item,key,index) in dailySummary.items" :key=index>
+                        <tr v-for="(item,key,index) in weeklySummary.items" :key=index>
+                            <td>
+                                {{ index + 1 }}
+                            </td>
                             <td id="image-cell">
-                                <img :src="items[key].images.smallRef" alt="item image" />
+                                <img :src=items[key].images.smallRef alt="Item Image" />
                             </td>
                             <td>
                                 {{ item.bid }}
                             </td>
                             <td>
                                 {{ item.name }}
-                            </td>
-                            <td>
-                                {{ formatNumber(item.price) }}
                             </td>
                             <td>
                                 {{ item.qty }}
@@ -70,17 +65,14 @@
                     <tfoot>
                         <tr>
                             <td colspan="5">
-                                Daily Total:
+                                Weekly Total:
                             </td>
                             <td>
-                                {{ dailyTotal }}
+                                {{ formatNumber(weeklySummary.total) }}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
-                <div v-else>
-                    No Carts on this date
-                </div>
             </div>
         </div>
     </div>
@@ -91,11 +83,7 @@ import {useProductStore} from '../../stores/products'
 import {useHelperStore} from '../../stores/helpers'
 export default({
     props:{
-        selectedDate:{
-            type:Object,
-            default:()=>{}
-        },
-        dailySummary:{
+        weeklySummary:{
             type:Object,
             default:()=>[]
         }
@@ -106,18 +94,10 @@ export default({
         const items = computed(() => {
             return productStore.items
         })
-        const dailyTotal = computed(() => {
-            let total = 0
-            Object.keys(props.dailySummary.items).forEach(iid => {
-                total += props.dailySummary.items[iid].total
-            })
-            return helperStore.formatNumberToCurrency(total)
-        })
         return {
             storeItems: items,
             formatNumber: helperStore.formatNumberToCurrency,
-            dailyTotal,
-            items
+            items,
         }
     },
 })

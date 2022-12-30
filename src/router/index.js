@@ -10,7 +10,7 @@ import FinishedProductsView from "../views/employee/FinishedProductsViewV2.vue";
 import OrdersView from "../views/employee/OrdersView.vue";
 import ScheduleView from "../views/employee/ScheduleViewV2.vue";
 import SuppliersView from "../views/employee/SuppliersView.vue";
-import ReviewsView from "../views/employee/ReviewsView.vue";
+import ReviewsView from "../views/employee/ReviewsViewV2.vue";
 import OrderDetailView from "../views/OrderDetailView.vue";
 import IngredientsView from "../views/employee/IngredientsView.vue"
 import RecipesView from '../views/employee/RecipesView.vue'

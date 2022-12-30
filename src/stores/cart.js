@@ -14,7 +14,7 @@ export const useCartStore = defineStore("cart", {
     carts: [],
     cartsDue: [],
     dailyCartsSummaries: [],
-    weeklyCartsSummary: {},
+    weeklyCartsSummary: { items: {}, total: 0 },
     ordersReadyForPickup: {},
     }),
   getters: {
@@ -327,15 +327,16 @@ export const useCartStore = defineStore("cart", {
             let items = {}
             let total = 0
             await this.cartsDue[dates[i]].forEach(cart => {
+                if(!cart.data.items){console.log(cart);return}
                 cart.data.items.forEach(item => {
-                    if (items[item.name]){
-                        items[item.name].qty += item.qty
-                        items[item.name].price = item.price
-                        items[item.name].total = item.qty * item.price
+                    if (items[item.iid]){
+                        items[item.iid].qty += item.qty
+                        items[item.iid].price = item.price
+                        items[item.iid].total = item.qty * item.price
                     } else {
-                        items[item.name] = {qty:item.qty, price:item.price, total:item.qty * item.price}
+                        items[item.iid] = {bid: item.bid, name:item.name, qty:item.qty, price:item.price, total:item.qty * item.price}
                     }
-                    total += items[item.name].total
+                    total += items[item.iid].total
                 })
             })
             this.dailyCartsSummaries.push({items:items, total:total})
@@ -346,12 +347,14 @@ export const useCartStore = defineStore("cart", {
             return acc + cur.total
         }, 0)
         this.dailyCartsSummaries.forEach(cart => {
-            for(let item in cart.items){
-                if (this.weeklyCartsSummary[item]){
-                    this.weeklyCartsSummary[item].qty += cart.items[item].qty
-                    this.weeklyCartsSummary[item].total += cart.items[item].total
-                } else {
-                    this.weeklyCartsSummary[item] = {qty:cart.items[item].qty, total:cart.items[item].total}
+            if(cart.items){
+                for(let item in cart.items){
+                    if (this.weeklyCartsSummary.items[item]){
+                        this.weeklyCartsSummary.items[item].qty += cart.items[item].qty
+                        this.weeklyCartsSummary.items[item].total += cart.items[item].total
+                    } else {
+                        this.weeklyCartsSummary.items[item] = {bid: cart.items[item].bid, name:cart.items[item].name, qty:cart.items[item].qty, total:cart.items[item].total}
+                    }
                 }
             }
         })

@@ -61,6 +61,7 @@ export default ({
         cartStore.getCartsDueForNext7Days()
 
         const reviewsStore = useReviewsStore()
+        reviewsStore.loadReviews()
         const router = useRouter()
         
         function goTo(route) {

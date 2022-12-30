@@ -5,7 +5,7 @@
             <h3>Upcoming Dates</h3>
         </span>
         <div class="col- oflow-y-auto">
-            <div id="week-summary-row" class="row- gap025 pd025 border-bottom" @click="$emit('on-check-day-summmary')">
+            <div id="week-summary-row" class="row- gap025 pd025 border-bottom" @click="$emit('on-check-weekly-summmary')">
                 <i class="bi bi-calendar2"></i>
                 <h5>Week Summary</h5>
             </div>
@@ -29,7 +29,8 @@ import {ref} from 'vue'
 export default ({
     props:{
         emits: [
-            'on-load-date'
+            'on-load-date',
+            'on-check-weekly-summmary'
         ],
         dates:{
             type:Object,

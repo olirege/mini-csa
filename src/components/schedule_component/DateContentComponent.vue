@@ -2,7 +2,7 @@
         <div class="col- h100 w25 border-with-radius">
             <span class="row- center-start border-bottom pd05 gap05 border-radius-top bg-gry-lgt">
                 <i class="bi bi-calendar-day"></i>
-                <h3 >{{ selectedDate.key }}</h3>
+                <h3 >{{ selectedDate.key ? selectedDate.key : "Orders" }}</h3>
             </span>
             <div class='h100'>
                 <div class="col- oflow-y-auto">

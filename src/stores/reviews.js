@@ -5,6 +5,7 @@ import { useUserStore } from "./user";
 export const useReviewsStore = defineStore("reviews", {
     state: () => ({
         helper: useHelperStore(),
+        reviewList : [], // all reviews
         reviews: {}, // all reviews by id
         itemReviews: {}, // all reviews by item id 
         review: null, // the selected review
@@ -15,10 +16,20 @@ export const useReviewsStore = defineStore("reviews", {
          * 1. Gets the reviews from the database
          * 2. Sets the reviews
          */
+        loadReviewList() {
+            this.reviewList = [];
+            for(let iid of Object.keys(this.reviews)){
+                for (let uid of Object.keys(this.reviews[iid])){
+                    this.reviews[iid][uid].iid = iid
+                    this.reviews[iid][uid].uid = uid
+                    this.reviewList.push(this.reviews[iid][uid])
+                }
+            }
+        },
         async loadReviews() {
-            this.helper.getCollection("reviews").then((reviews) => {
-                this.reviews = reviews;
-            });
+            const reviews = await this.helper.getCollection("reviews")
+            this.reviews = reviews;
+            this.loadReviewList();
         },
         /**
          * 
@@ -68,12 +79,16 @@ export const useReviewsStore = defineStore("reviews", {
          */
         async addReply(ids,reply){
             const data = {}
-            data[ids[1]] = reply;
-            this.helper.setDoc("reviews",ids.iid, data).then(() => {
-                this.reviews[ids.iid][ids.uid].reply = reply
-                }).catch((error) => {
-                console.error("Error adding reply: ", error);
-            });
+            data[ids.uid] = {reply:reply}
+            console.log(data)
+            const resp = await this.helper.setDoc("reviews",ids.iid, data)
+            this.reviews[ids.iid][ids.uid].reply = reply
+            if(resp){
+                return true
+            }else{
+                console.log("Error adding reply")
+                return false
+            }
         },
         /**
          * 
@@ -93,7 +108,7 @@ export const useReviewsStore = defineStore("reviews", {
     },
     getters: {
         getAmountAllReviews: (state) => {
-            return Object.keys(state.reviews).length;
+            return state.reviewList.length;
         },
     },
 });

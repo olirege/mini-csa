@@ -85,6 +85,7 @@ export default {
     display: flex;
     flex-direction: column;
     padding: 0.5rem;
+    overflow-y: auto;
 }
 .content > .header > i {
     font-size: 2.2rem;
@@ -98,6 +99,9 @@ export default {
     width:100%;
     margin-bottom: 1rem;
     border-bottom: 1px solid var(--color-border)
+}
+.header p{
+    text-align: center;
 }
 .header> h3 {
     font-size: 0.7rem;

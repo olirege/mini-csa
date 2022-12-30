@@ -6,31 +6,37 @@
                     :dates="cartsDue"
                     :selectedDate = "selectedDate"
                     @on-load-date="loadCartsOfDate"
+                    @on-check-weekly-summmary="onCheckWeeklySummary"
                     />
                 <DateContentComponent
                 :selectedDate="selectedDate"
                 :selectedCart="selectedCart"
                 @on-load-cart="loadCart"
-                @on-check-day-summmary="showDaySummary = true"/>
-                <CartContentComponent v-if="selectedCart.key && !showDaySummary"
+                @on-check-day-summmary="onCheckDaySummary"/>
+                <CartContentComponent v-if="selectedCart.key && !showDaySummary && !showWeeklySummary"
                 :selectedCart="selectedCart" />
                 <DaySummaryContentComponent 
                 v-if="showDaySummary"
                 :selectedDate="selectedDate"
-                :dailySummary="dailyCartsSummaries[selectedDate.index]" />
+                :dailySummary="dailyCartsSummaries[selectedDate.index]"/>
+                <WeeklySummaryContentComponent
+                v-if="showWeeklySummary"
+                :weeklySummary="weeklyCartsSummary"
+                />
             </div>
         </template>
     </ThePage>
 </template>
 <script>
-import {computed,ref} from 'vue'
+import { computed,ref } from 'vue'
 import { useCartStore } from '../../stores/cart'
 import ThePage from '../../components/common/ThePage.vue'
 import DateListComponent from '../../components/schedule_component/DateListComponent.vue'
 import DateContentComponent from '../../components/schedule_component/DateContentComponent.vue'
 import CartContentComponent from '../../components/schedule_component/CartContentComponent.vue'
 import DaySummaryContentComponent from '../../components/schedule_component/DaySummaryContentComponent.vue'
-import {useHelperStore} from '../../stores/helpers'
+import WeeklySummaryContentComponent from '../../components/schedule_component/WeeklySummaryContentComponent.vue'
+import { useHelperStore } from '../../stores/helpers'
 export default ({
     components: {
         ThePage,
@@ -38,6 +44,7 @@ export default ({
         DateContentComponent,
         CartContentComponent,
         DaySummaryContentComponent,
+        WeeklySummaryContentComponent,
     },
     setup() {
         const cartStore = useCartStore()
@@ -45,6 +52,7 @@ export default ({
         const selectedDate = ref({})
         const selectedCart = ref({})
         const showDaySummary = ref(false)
+        const showWeeklySummary = ref(true)
         const cartsDue = computed(() => cartStore.cartsDue)
         cartStore.summarizeItemsQtyAndPriceOfCartsOnADate().then(
             () =>{
@@ -55,10 +63,22 @@ export default ({
         const dailyCartsSummaries = computed(() => cartStore.dailyCartsSummaries)
         function loadCartsOfDate(date){
             Object.assign(selectedDate.value,date)
-            //
+            showDaySummary.value = false
+            showWeeklySummary.value = true
+            
         }
         function loadCart(cid){
             Object.assign(selectedCart.value,cid)
+            showDaySummary.value = false
+            showWeeklySummary.value = false
+        }
+        function onCheckWeeklySummary(){
+            showWeeklySummary.value = true
+            showDaySummary.value = false
+        }
+        function onCheckDaySummary(){
+            showWeeklySummary.value = false
+            showDaySummary.value = true
         }
         return {
             cartsDue,
@@ -66,11 +86,14 @@ export default ({
             weeklyCartsSummary,
             colors: helperStore.colors,
             dailyCartsSummaries,
+            showWeeklySummary,
             selectedDate,
             selectedCart,
             loadCartsOfDate,
             loadCart,
             showDaySummary,
+            onCheckWeeklySummary,
+            onCheckDaySummary,
         }
     },
 })

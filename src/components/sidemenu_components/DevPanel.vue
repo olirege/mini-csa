@@ -32,6 +32,14 @@
                 <h5>Remove Fake Cart</h5>
                 <i class="bi bi-chevron-down"></i>
             </span>
+            <span class="panel-item" @click="AddFakeReview">
+                <h5>Add Fake Review</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
+            <span class="panel-item" @click="RemoveFakeReviews">
+                <h5>Remove Fake Reviews</h5>
+                <i class="bi bi-chevron-down"></i>
+            </span>
         </div>
     </div>
 </template>
@@ -52,7 +60,11 @@ export default ({
                     'dLdcms0fwLZGpx5KH1XHeoNuTq33',
                     'XBeDNNGGv6SgqDwDco4hxJ8cFWl2',
                     ]
-            
+        const reviews = [
+        "Item was tough and lacked flavor. Definitely not worth the price. Will not be ordering again.",
+        "Item is life-changing! Juicy, tender, and packed with flavor. Every bite is bursting with deliciousness. Highly recommend!",
+        "Item was average. The flavor was okay, but the meat was a bit tough. Not the best, but not the worst either.",
+        ]    
         const units = [
             "milligrams",
             "grams",
@@ -232,6 +244,36 @@ export default ({
             })
                     
         }
+        function AddFakeReview(){
+            let randomNumber = Math.floor(Math.random() * 10)
+            let randomUser = 'fake_' + uid[Math.floor(Math.random()*uid.length)]
+            let randomItem = Object.keys(productStore.items)[Math.floor(Math.random()*Object.keys(productStore.items).length)]
+            let randomRating = Math.floor(Math.random() * 5) + 1
+            let randomReview = reviews[Math.floor(Math.random()*reviews.length)]
+            let randomDate = new Date()
+            let review = {}
+            let reply = {}
+            
+            reply.content = 'Thank you for your review!'
+            reply.timestamp = new Date()
+            reply.from = 'admin'
+            
+            review[randomUser] = {
+                    rating: randomRating,
+                    content: randomReview,
+                    timestamp: randomDate,
+                    reply: randomNumber > 5 ? reply : {}
+                }
+                helperStore.setDoc('reviews',randomItem, review)
+        }
+
+        function RemoveFakeReviews(){
+            helperStore.getDocs('reviews').then((reviews) => {
+                Object.keys(reviews).forEach((iid) => {
+                    helperStore.deleteDoc('reviews',iid)
+                })
+            })
+        }
         return {
             AddFakeItems,
             RemoveFakeItems,
@@ -240,6 +282,8 @@ export default ({
             AddFakeOrder,
             AddFakeActiveCart,
             RemoveFakeCarts,
+            AddFakeReview,
+            RemoveFakeReviews
         }
     },
 })
